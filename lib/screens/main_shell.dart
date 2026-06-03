@@ -34,7 +34,10 @@ class _MainShellState extends State<MainShell> {
         currentIndex: _index,
         onTap: (index) => setState(() => _index = index),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.medical_services_rounded),
             label: 'Jadwal',
@@ -47,7 +50,10 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(Icons.history_rounded),
             label: 'Riwayat',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profil'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_rounded),
+            label: 'Profil',
+          ),
         ],
       ),
     );

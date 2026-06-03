@@ -20,8 +20,10 @@ class HistoryScreen extends StatelessWidget {
             : ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: bookings.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) => _HistoryCard(booking: bookings[index]),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (context, index) =>
+                    _HistoryCard(booking: bookings[index]),
               ),
       ),
     );
@@ -53,28 +55,44 @@ class _HistoryCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   booking.doctor.name,
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: _statusColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   booking.status,
-                  style: TextStyle(color: _statusColor, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: _statusColor,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(booking.doctor.polyclinic, style: const TextStyle(color: AppColors.textGrey)),
+          Text(
+            booking.doctor.polyclinic,
+            style: const TextStyle(color: AppColors.textGrey),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.calendar_month_rounded, size: 18, color: AppColors.textGrey),
+              const Icon(
+                Icons.calendar_month_rounded,
+                size: 18,
+                color: AppColors.textGrey,
+              ),
               const SizedBox(width: 8),
               Text('${booking.date}, ${booking.time}'),
             ],

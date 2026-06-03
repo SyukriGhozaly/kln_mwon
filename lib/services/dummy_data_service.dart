@@ -83,8 +83,8 @@ class DummyDataService {
     final prefix = polyclinic.contains('Gigi')
         ? 'G'
         : polyclinic.contains('Anak')
-            ? 'C'
-            : 'A';
+        ? 'C'
+        : 'A';
     final number = (history.length + 33).toString().padLeft(3, '0');
     return '$prefix-$number';
   }

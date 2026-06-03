@@ -19,9 +19,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profil berhasil disimpan.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Profil berhasil disimpan.')));
     Navigator.of(context).pop();
   }
 
@@ -40,7 +40,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const CircleAvatar(
                     radius: 44,
                     backgroundColor: AppColors.lightBlue,
-                    child: Icon(Icons.person_rounded, color: AppColors.primary, size: 52),
+                    child: Icon(
+                      Icons.person_rounded,
+                      color: AppColors.primary,
+                      size: 52,
+                    ),
                   ),
                   const SizedBox(height: 18),
                   TextFormField(

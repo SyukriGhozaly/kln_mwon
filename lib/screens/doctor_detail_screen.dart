@@ -55,7 +55,10 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                             ),
                           ),
                           const SizedBox(height: 5),
-                          Text(doctor.specialty, style: const TextStyle(color: AppColors.textGrey)),
+                          Text(
+                            doctor.specialty,
+                            style: const TextStyle(color: AppColors.textGrey),
+                          ),
                           const SizedBox(height: 8),
                           Text(doctor.practiceTime),
                         ],
@@ -65,7 +68,10 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              const Text('Tanggal Praktik', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text(
+                'Tanggal Praktik',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 10,
@@ -79,7 +85,10 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                 }).toList(),
               ),
               const SizedBox(height: 18),
-              const Text('Jam Praktik', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text(
+                'Jam Praktik',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 10,

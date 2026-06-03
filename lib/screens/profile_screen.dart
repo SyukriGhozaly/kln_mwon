@@ -22,7 +22,11 @@ class ProfileScreen extends StatelessWidget {
               const CircleAvatar(
                 radius: 48,
                 backgroundColor: AppColors.lightBlue,
-                child: Icon(Icons.person_rounded, color: AppColors.primary, size: 58),
+                child: Icon(
+                  Icons.person_rounded,
+                  color: AppColors.primary,
+                  size: 58,
+                ),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -43,14 +47,18 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.edit_rounded,
                       title: 'Edit Profil',
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const EditProfileScreen(),
+                        ),
                       ),
                     ),
                     _ProfileMenu(
                       icon: Icons.history_rounded,
                       title: 'Riwayat',
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const HistoryScreen(),
+                        ),
                       ),
                     ),
                     _ProfileMenu(
@@ -111,7 +119,10 @@ class _ProfileMenu extends StatelessWidget {
 
     return ListTile(
       leading: Icon(icon, color: danger ? AppColors.danger : AppColors.primary),
-      title: Text(title, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+      title: Text(
+        title,
+        style: TextStyle(color: color, fontWeight: FontWeight.w600),
+      ),
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: onTap,
     );

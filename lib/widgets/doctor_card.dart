@@ -37,7 +37,10 @@ class DoctorCard extends StatelessWidget {
               children: [
                 Text(
                   doctor.name,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -47,7 +50,10 @@ class DoctorCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   doctor.practiceTime,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textGrey),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textGrey,
+                  ),
                 ),
               ],
             ),

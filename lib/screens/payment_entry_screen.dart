@@ -34,7 +34,9 @@ class PaymentEntryScreen extends StatelessWidget {
                 const SizedBox(height: 18),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => DoctorDetailScreen(doctor: doctor)),
+                    MaterialPageRoute(
+                      builder: (_) => DoctorDetailScreen(doctor: doctor),
+                    ),
                   ),
                   child: const Text('PILIH JADWAL'),
                 ),

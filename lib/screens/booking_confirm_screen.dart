@@ -25,7 +25,9 @@ class BookingConfirmScreen extends StatefulWidget {
 
 class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _complaintController = TextEditingController(text: 'Konsultasi kesehatan');
+  final _complaintController = TextEditingController(
+    text: 'Konsultasi kesehatan',
+  );
   String _paymentMethod = 'QRIS';
 
   @override
@@ -48,9 +50,9 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
       status: 'Menunggu pembayaran',
       total: widget.doctor.fee,
     );
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PaymentScreen(booking: booking)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => PaymentScreen(booking: booking)));
   }
 
   @override
@@ -84,31 +86,49 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                const Text('Keluhan', style: TextStyle(fontWeight: FontWeight.w800)),
+                const Text(
+                  'Keluhan',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _complaintController,
                   minLines: 3,
                   maxLines: 4,
-                  decoration: const InputDecoration(hintText: 'Tuliskan keluhan pasien'),
+                  decoration: const InputDecoration(
+                    hintText: 'Tuliskan keluhan pasien',
+                  ),
                   validator: (value) => value == null || value.trim().isEmpty
                       ? 'Keluhan wajib diisi ya'
                       : null,
                 ),
                 const SizedBox(height: 14),
-                const Text('Metode Pembayaran', style: TextStyle(fontWeight: FontWeight.w800)),
+                const Text(
+                  'Metode Pembayaran',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _paymentMethod,
                   items: const [
                     DropdownMenuItem(value: 'QRIS', child: Text('QRIS')),
-                    DropdownMenuItem(value: 'Transfer Bank', child: Text('Transfer Bank')),
-                    DropdownMenuItem(value: 'Bayar di Tempat', child: Text('Bayar di Tempat')),
+                    DropdownMenuItem(
+                      value: 'Transfer Bank',
+                      child: Text('Transfer Bank'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Bayar di Tempat',
+                      child: Text('Bayar di Tempat'),
+                    ),
                   ],
-                  onChanged: (value) => setState(() => _paymentMethod = value ?? 'QRIS'),
+                  onChanged: (value) =>
+                      setState(() => _paymentMethod = value ?? 'QRIS'),
                 ),
                 const SizedBox(height: 22),
-                ElevatedButton(onPressed: _goToPayment, child: const Text('PAYMENT')),
+                ElevatedButton(
+                  onPressed: _goToPayment,
+                  child: const Text('PAYMENT'),
+                ),
               ],
             ),
           ),
@@ -130,7 +150,10 @@ class _InfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 12),
           ...rows.entries.map(
             (entry) => Padding(

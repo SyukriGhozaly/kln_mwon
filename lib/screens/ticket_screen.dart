@@ -19,7 +19,11 @@ class TicketScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 76),
+              const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.success,
+                size: 76,
+              ),
               const SizedBox(height: 10),
               const Text(
                 'Pendaftaran Berhasil',
@@ -29,7 +33,10 @@ class TicketScreen extends StatelessWidget {
               PrimaryCard(
                 child: Column(
                   children: [
-                    const Text('Nomor Antrian', style: TextStyle(color: AppColors.textGrey)),
+                    const Text(
+                      'Nomor Antrian',
+                      style: TextStyle(color: AppColors.textGrey),
+                    ),
                     const SizedBox(height: 6),
                     Text(
                       booking.queueNumber,
@@ -53,7 +60,10 @@ class TicketScreen extends StatelessWidget {
                     _TicketRow(label: 'Kode Booking', value: booking.code),
                     _TicketRow(label: 'Pasien', value: booking.patientName),
                     _TicketRow(label: 'Dokter', value: booking.doctor.name),
-                    _TicketRow(label: 'Jadwal', value: '${booking.date}, ${booking.time}'),
+                    _TicketRow(
+                      label: 'Jadwal',
+                      value: '${booking.date}, ${booking.time}',
+                    ),
                     _TicketRow(label: 'Status', value: 'Terjadwal'),
                   ],
                 ),
@@ -89,10 +99,16 @@ class _TicketRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 105,
-            child: Text(label, style: const TextStyle(color: AppColors.textGrey)),
+            child: Text(
+              label,
+              style: const TextStyle(color: AppColors.textGrey),
+            ),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),

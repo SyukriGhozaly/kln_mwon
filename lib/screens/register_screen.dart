@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/api_service.dart';
+import '../core/services/auth_service.dart';
 import '../widgets/primary_card.dart';
+import 'main_shell.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -11,23 +14,59 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _authService = AuthService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   String? _required(String? value) =>
       value == null || value.isEmpty ? 'Field wajib diisi' : null;
 
-  void _register() {
+  Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Akun berhasil dibuat. Silakan login.')),
-    );
+
+    setState(() => _isLoading = true);
+    try {
+      await _authService.register(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        password: _passwordController.text,
+        passwordConfirmation: _confirmPasswordController.text,
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainShell()),
+        (_) => false,
+      );
+    } on ApiException catch (error) {
+      _showError(error.message);
+    } catch (_) {
+      _showError('Tidak bisa terhubung ke server. Pastikan CI4 sedang jalan.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -43,6 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 children: [
                   TextFormField(
+                    controller: _nameController,
                     decoration: const InputDecoration(
                       labelText: 'Nama lengkap',
                       prefixIcon: Icon(Icons.person_outline_rounded),
@@ -51,6 +91,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.mail_outline_rounded),
@@ -59,6 +101,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
                     decoration: const InputDecoration(
                       labelText: 'No HP',
                       prefixIcon: Icon(Icons.phone_outlined),
@@ -77,13 +121,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
+                    controller: _confirmPasswordController,
                     obscureText: true,
                     decoration: const InputDecoration(
                       labelText: 'Konfirmasi password',
                       prefixIcon: Icon(Icons.verified_user_outlined),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Field wajib diisi';
+                      if (value == null || value.isEmpty) {
+                        return 'Field wajib diisi';
+                      }
                       if (value != _passwordController.text) {
                         return 'Konfirmasi password tidak sama';
                       }
@@ -91,7 +138,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
                   const SizedBox(height: 18),
-                  ElevatedButton(onPressed: _register, child: const Text('DAFTAR')),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _register,
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('DAFTAR'),
+                  ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text('Sudah punya akun? Login'),

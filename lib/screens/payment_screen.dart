@@ -11,10 +11,8 @@ class PaymentScreen extends StatelessWidget {
 
   final Booking booking;
 
-  String get _total => 'Rp ${booking.total.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (match) => '${match[1]}.',
-      )}';
+  String get _total =>
+      'Rp ${booking.total.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]}.')}';
 
   @override
   Widget build(BuildContext context) {
@@ -28,11 +26,17 @@ class PaymentScreen extends StatelessWidget {
               PrimaryCard(
                 child: Column(
                   children: [
-                    const Text('Total Tagihan', style: TextStyle(color: AppColors.textGrey)),
+                    const Text(
+                      'Total Tagihan',
+                      style: TextStyle(color: AppColors.textGrey),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       _total,
-                      style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+                      style: const TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(booking.code),
@@ -45,7 +49,10 @@ class PaymentScreen extends StatelessWidget {
                   children: [
                     const Text(
                       'Scan QRIS / Transfer Pembayaran',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const _FakeQr(size: 180),
@@ -54,7 +61,9 @@ class PaymentScreen extends StatelessWidget {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.account_balance_wallet_rounded),
                       title: Text(booking.paymentMethod),
-                      subtitle: const Text('Status: menunggu konfirmasi pembayaran'),
+                      subtitle: const Text(
+                        'Status: menunggu konfirmasi pembayaran',
+                      ),
                     ),
                   ],
                 ),
@@ -62,7 +71,9 @@ class PaymentScreen extends StatelessWidget {
               const SizedBox(height: 22),
               ElevatedButton(
                 onPressed: () {
-                  final confirmedBooking = booking.copyWith(status: 'Terjadwal');
+                  final confirmedBooking = booking.copyWith(
+                    status: 'Terjadwal',
+                  );
                   DummyDataService.addBooking(confirmedBooking);
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
@@ -102,7 +113,8 @@ class _FakeQr extends StatelessWidget {
         ),
         itemCount: 81,
         itemBuilder: (_, index) {
-          final dark = index % 2 == 0 || index % 7 == 0 || index == 10 || index == 70;
+          final dark =
+              index % 2 == 0 || index % 7 == 0 || index == 10 || index == 70;
           return Container(
             margin: const EdgeInsets.all(1.5),
             color: dark ? AppColors.textDark : Colors.white,

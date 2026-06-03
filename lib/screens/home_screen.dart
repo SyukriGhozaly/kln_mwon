@@ -63,7 +63,11 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: 12),
-                    Icon(Icons.health_and_safety_rounded, color: Colors.white, size: 58),
+                    Icon(
+                      Icons.health_and_safety_rounded,
+                      color: Colors.white,
+                      size: 58,
+                    ),
                   ],
                 ),
               ),
@@ -98,9 +102,15 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 22),
-              _SectionTitle(title: 'Daftar Dokter', action: 'Lihat semua', onTap: () => onOpenTab(1)),
+              _SectionTitle(
+                title: 'Daftar Dokter',
+                action: 'Lihat semua',
+                onTap: () => onOpenTab(1),
+              ),
               const SizedBox(height: 12),
-              ...doctors.take(2).map(
+              ...doctors
+                  .take(2)
+                  .map(
                     (doctor) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: DoctorCard(
@@ -119,7 +129,10 @@ class HomeScreen extends StatelessWidget {
               PrimaryCard(
                 child: Row(
                   children: [
-                    const Icon(Icons.schedule_rounded, color: AppColors.primary),
+                    const Icon(
+                      Icons.schedule_rounded,
+                      color: AppColors.primary,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -139,7 +152,11 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _QuickMenu extends StatelessWidget {
-  const _QuickMenu({required this.icon, required this.label, required this.onTap});
+  const _QuickMenu({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;

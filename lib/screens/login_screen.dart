@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/api_service.dart';
+import '../core/services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/primary_card.dart';
@@ -15,8 +17,10 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'rizky@email.com');
-  final _passwordController = TextEditingController(text: 'password');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _authService = AuthService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -25,11 +29,34 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const MainShell()),
-    );
+
+    setState(() => _isLoading = true);
+    try {
+      await _authService.login(
+        login: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
+    } on ApiException catch (error) {
+      _showError(error.message);
+    } catch (_) {
+      _showError('Tidak bisa terhubung ke server. Pastikan CI4 sedang jalan.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -67,8 +94,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icon(Icons.mail_outline_rounded),
                           hintText: 'Masukkan email',
                         ),
-                        validator: (value) =>
-                            value == null || value.isEmpty ? 'Email wajib diisi' : null,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Email wajib diisi'
+                            : null,
                       ),
                       const SizedBox(height: 14),
                       const Text('Password'),
@@ -91,7 +119,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: const Text('Lupa password?'),
                         ),
                       ),
-                      ElevatedButton(onPressed: _login, child: const Text('SIGN IN')),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _login,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('SIGN IN'),
+                      ),
                       const SizedBox(height: 18),
                       const Row(
                         children: [
@@ -108,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: _login,
+                              onPressed: null,
                               icon: const Icon(Icons.g_mobiledata_rounded),
                               label: const Text('Google'),
                             ),
@@ -116,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: _login,
+                              onPressed: null,
                               icon: const Icon(Icons.facebook_rounded),
                               label: const Text('Facebook'),
                             ),
