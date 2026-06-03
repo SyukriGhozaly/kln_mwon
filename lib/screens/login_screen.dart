@@ -1,0 +1,143 @@
+import 'package:flutter/material.dart';
+
+import '../theme/app_theme.dart';
+import '../widgets/app_logo.dart';
+import '../widgets/primary_card.dart';
+import 'main_shell.dart';
+import 'register_screen.dart';
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController(text: 'rizky@email.com');
+  final _passwordController = TextEditingController(text: 'password');
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _login() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const MainShell()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              const SizedBox(height: 24),
+              const AppLogo(),
+              const SizedBox(height: 16),
+              const Text(
+                'Klinik Mawon',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+              ),
+              const Text(
+                'Sistem Booking Klinik Online',
+                style: TextStyle(color: AppColors.textGrey),
+              ),
+              const SizedBox(height: 28),
+              PrimaryCard(
+                padding: const EdgeInsets.all(18),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Email / Username'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          prefixIcon: Icon(Icons.mail_outline_rounded),
+                          hintText: 'Masukkan email',
+                        ),
+                        validator: (value) =>
+                            value == null || value.isEmpty ? 'Email wajib diisi' : null,
+                      ),
+                      const SizedBox(height: 14),
+                      const Text('Password'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          prefixIcon: Icon(Icons.lock_outline_rounded),
+                          hintText: 'Masukkan password',
+                        ),
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Password wajib diisi'
+                            : null,
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {},
+                          child: const Text('Lupa password?'),
+                        ),
+                      ),
+                      ElevatedButton(onPressed: _login, child: const Text('SIGN IN')),
+                      const SizedBox(height: 18),
+                      const Row(
+                        children: [
+                          Expanded(child: Divider()),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 10),
+                            child: Text('or sign in with'),
+                          ),
+                          Expanded(child: Divider()),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _login,
+                              icon: const Icon(Icons.g_mobiledata_rounded),
+                              label: const Text('Google'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _login,
+                              icon: const Icon(Icons.facebook_rounded),
+                              label: const Text('Facebook'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                ),
+                child: const Text('Belum punya akun? Daftar'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
