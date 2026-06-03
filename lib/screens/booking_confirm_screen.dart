@@ -92,7 +92,7 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                   maxLines: 4,
                   decoration: const InputDecoration(hintText: 'Tuliskan keluhan pasien'),
                   validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Keluhan wajib diisi'
+                      ? 'Keluhan wajib diisi ya'
                       : null,
                 ),
                 const SizedBox(height: 14),
