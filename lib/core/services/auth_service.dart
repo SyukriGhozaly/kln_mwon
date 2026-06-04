@@ -1,3 +1,4 @@
+import '../constants/api_config.dart';
 import 'api_service.dart';
 
 class AuthSession {
@@ -19,8 +20,11 @@ class AuthService {
     required String login,
     required String password,
   }) async {
-    final response = await _apiService.post('/login', {
-      'login': login,
+    final normalizedLogin = login.trim();
+    final response = await _apiService.post(ApiConfig.loginPath, {
+      'login': normalizedLogin,
+      if (normalizedLogin.contains('@')) 'email': normalizedLogin,
+      if (!normalizedLogin.contains('@')) 'username': normalizedLogin,
       'password': password,
     });
 
@@ -36,10 +40,12 @@ class AuthService {
     required String password,
     required String passwordConfirmation,
   }) async {
-    final response = await _apiService.post('/register', {
+    final response = await _apiService.post(ApiConfig.registerPath, {
       'name': name,
+      'nama': name,
       'email': email,
       'phone': phone,
+      'no_hp': phone,
       'password': password,
       'password_confirmation': passwordConfirmation,
     });

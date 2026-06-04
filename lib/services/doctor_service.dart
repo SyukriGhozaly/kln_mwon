@@ -1,3 +1,4 @@
+import '../core/constants/api_config.dart';
 import '../core/services/api_service.dart';
 import '../models/doctor.dart';
 
@@ -7,7 +8,13 @@ class DoctorService {
   final ApiService _api;
 
   Future<List<Doctor>> getDoctors() async {
-    final response = await _api.get('/admin_doctor');
+    dynamic response;
+    try {
+      response = await _api.get(ApiConfig.doctorsPath);
+    } on ApiException {
+      response = await _api.get(ApiConfig.legacyDoctorsPath);
+    }
+
     final list = _extractList(response);
     return list.map((item) => Doctor.fromJson(item)).toList();
   }
