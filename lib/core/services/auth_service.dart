@@ -1,5 +1,6 @@
 import '../constants/api_config.dart';
 import 'api_service.dart';
+import 'session_manager.dart';
 
 class AuthSession {
   const AuthSession({required this.token, required this.user});
@@ -11,8 +12,6 @@ class AuthSession {
 class AuthService {
   AuthService({ApiService? apiService})
     : _apiService = apiService ?? ApiService();
-
-  static AuthSession? _currentSession;
 
   final ApiService _apiService;
 
@@ -56,15 +55,21 @@ class AuthService {
   }
 
   Future<bool> hasSession() async {
-    return _currentSession != null;
+    return SessionManager.hasSession;
   }
 
   Future<void> saveSession(AuthSession session) async {
-    _currentSession = session;
+    SessionManager.save(newToken: session.token, newUser: session.user);
   }
 
   Future<void> logout() async {
-    _currentSession = null;
+    try {
+      await _apiService.post(ApiConfig.logoutPath, {});
+    } on ApiException {
+      // Local logout must still work when the backend token is expired/offline.
+    } finally {
+      SessionManager.clear();
+    }
   }
 
   AuthSession _sessionFromResponse(dynamic response) {

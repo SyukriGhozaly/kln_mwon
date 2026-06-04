@@ -1,99 +1,173 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/auth_service.dart';
+import '../core/services/session_manager.dart';
 import '../services/dummy_data_service.dart';
+import '../services/profile_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/primary_card.dart';
 import 'edit_profile_screen.dart';
 import 'history_screen.dart';
 import 'login_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late final Future<void> _loadProfile = _fetchProfile();
+  ProfileData _profile = ProfileData(
+    name: _sessionValue(['name', 'nama'], DummyDataService.userName),
+    email: _sessionValue(['email'], DummyDataService.userEmail),
+    phone: _sessionValue(['phone', 'no_hp'], DummyDataService.userPhone),
+    address: _sessionValue(['address', 'alamat'], 'Jl. Sehat Mawon No. 10'),
+  );
+
+  Future<void> _fetchProfile() async {
+    try {
+      final profile = await ProfileService().getProfile();
+      if (!mounted) return;
+      setState(() => _profile = profile);
+    } catch (error) {
+      debugPrint('Gagal memuat profile dari API: $error');
+    }
+  }
+
+  Future<void> _logout() async {
+    await AuthService().logout();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
+  }
+
+  static String _sessionValue(List<String> keys, String fallback) {
+    final user = SessionManager.user;
+    if (user == null) return fallback;
+
+    for (final key in keys) {
+      final value = user[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    return fallback;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              const CircleAvatar(
-                radius: 48,
-                backgroundColor: AppColors.lightBlue,
-                child: Icon(
-                  Icons.person_rounded,
-                  color: AppColors.primary,
-                  size: 58,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                DummyDataService.userName,
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                DummyDataService.userEmail,
-                style: TextStyle(color: AppColors.textGrey),
-              ),
-              const SizedBox(height: 20),
-              PrimaryCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    _ProfileMenu(
-                      icon: Icons.edit_rounded,
-                      title: 'Edit Profil',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const EditProfileScreen(),
+        child: FutureBuilder<void>(
+          future: _loadProfile,
+          builder: (context, snapshot) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  const CircleAvatar(
+                    radius: 48,
+                    backgroundColor: AppColors.lightBlue,
+                    child: Icon(
+                      Icons.person_rounded,
+                      color: AppColors.primary,
+                      size: 58,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _profile.name,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _profile.email,
+                    style: const TextStyle(color: AppColors.textGrey),
+                  ),
+                  const SizedBox(height: 20),
+                  PrimaryCard(
+                    padding: EdgeInsets.zero,
+                    child: Column(
+                      children: [
+                        _ProfileMenu(
+                          icon: Icons.edit_rounded,
+                          title: 'Edit Profil',
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    EditProfileScreen(profile: _profile),
+                              ),
+                            );
+                            if (!mounted) return;
+                            setState(() {
+                              _profile = ProfileData(
+                                name: _sessionValue([
+                                  'name',
+                                  'nama',
+                                ], _profile.name),
+                                email: _sessionValue(['email'], _profile.email),
+                                phone: _sessionValue([
+                                  'phone',
+                                  'no_hp',
+                                ], _profile.phone),
+                                address: _sessionValue([
+                                  'address',
+                                  'alamat',
+                                ], _profile.address),
+                              );
+                            });
+                          },
                         ),
-                      ),
-                    ),
-                    _ProfileMenu(
-                      icon: Icons.history_rounded,
-                      title: 'Riwayat',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const HistoryScreen(),
+                        _ProfileMenu(
+                          icon: Icons.history_rounded,
+                          title: 'Riwayat',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const HistoryScreen(),
+                            ),
+                          ),
                         ),
-                      ),
+                        _ProfileMenu(
+                          icon: Icons.settings_rounded,
+                          title: 'Pengaturan',
+                          onTap: () {},
+                        ),
+                        _ProfileMenu(
+                          icon: Icons.help_outline_rounded,
+                          title: 'Bantuan',
+                          onTap: () {},
+                        ),
+                        _ProfileMenu(
+                          icon: Icons.info_outline_rounded,
+                          title: 'Tentang Aplikasi',
+                          onTap: () => showAboutDialog(
+                            context: context,
+                            applicationName: 'Klinik Mawon',
+                            applicationVersion: '0.1.0',
+                          ),
+                        ),
+                        _ProfileMenu(
+                          icon: Icons.logout_rounded,
+                          title: 'Logout',
+                          danger: true,
+                          onTap: _logout,
+                        ),
+                      ],
                     ),
-                    _ProfileMenu(
-                      icon: Icons.settings_rounded,
-                      title: 'Pengaturan',
-                      onTap: () {},
-                    ),
-                    _ProfileMenu(
-                      icon: Icons.help_outline_rounded,
-                      title: 'Bantuan',
-                      onTap: () {},
-                    ),
-                    _ProfileMenu(
-                      icon: Icons.info_outline_rounded,
-                      title: 'Tentang Aplikasi',
-                      onTap: () => showAboutDialog(
-                        context: context,
-                        applicationName: 'Klinik Mawon',
-                        applicationVersion: '0.1.0',
-                      ),
-                    ),
-                    _ProfileMenu(
-                      icon: Icons.logout_rounded,
-                      title: 'Logout',
-                      danger: true,
-                      onTap: () => Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        (_) => false,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

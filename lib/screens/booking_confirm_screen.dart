@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/session_manager.dart';
 import '../models/booking.dart';
 import '../models/doctor.dart';
+import '../services/booking_service.dart';
 import '../services/dummy_data_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/primary_card.dart';
@@ -28,7 +30,9 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
   final _complaintController = TextEditingController(
     text: 'Konsultasi kesehatan',
   );
+  final _bookingService = BookingService();
   String _paymentMethod = 'QRIS';
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -36,23 +40,67 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
     super.dispose();
   }
 
-  void _goToPayment() {
+  Future<void> _goToPayment() async {
     if (!_formKey.currentState!.validate()) return;
-    final booking = Booking(
+
+    setState(() => _isSubmitting = true);
+    try {
+      final booking = await _bookingService.createBooking(
+        doctor: widget.doctor,
+        date: widget.date,
+        time: widget.time,
+        complaint: _complaintController.text.trim(),
+        paymentMethod: _paymentMethod,
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => PaymentScreen(booking: booking)),
+      );
+    } catch (error) {
+      final booking = _dummyBooking();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Booking API belum berhasil: $error. Memakai data lokal dulu.',
+          ),
+        ),
+      );
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => PaymentScreen(booking: booking)),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Booking _dummyBooking() {
+    return Booking(
       code: DummyDataService.nextBookingCode(),
       queueNumber: DummyDataService.nextQueueNumber(widget.doctor.polyclinic),
-      patientName: DummyDataService.userName,
+      patientName: _profileValue(['name', 'nama'], DummyDataService.userName),
       doctor: widget.doctor,
       date: widget.date,
       time: widget.time,
-      complaint: _complaintController.text,
+      complaint: _complaintController.text.trim(),
       paymentMethod: _paymentMethod,
       status: 'Menunggu pembayaran',
       total: widget.doctor.fee,
     );
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => PaymentScreen(booking: booking)));
+  }
+
+  String _profileValue(List<String> keys, String fallback) {
+    final user = SessionManager.user;
+    if (user == null) return fallback;
+
+    for (final key in keys) {
+      final value = user[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    return fallback;
   }
 
   @override
@@ -69,9 +117,15 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
               children: [
                 _InfoCard(
                   title: 'Data Pasien',
-                  rows: const {
-                    'Nama': DummyDataService.userName,
-                    'No HP': DummyDataService.userPhone,
+                  rows: {
+                    'Nama': _profileValue([
+                      'name',
+                      'nama',
+                    ], DummyDataService.userName),
+                    'No HP': _profileValue([
+                      'phone',
+                      'no_hp',
+                    ], DummyDataService.userPhone),
                   },
                 ),
                 const SizedBox(height: 12),
@@ -126,8 +180,17 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                 ),
                 const SizedBox(height: 22),
                 ElevatedButton(
-                  onPressed: _goToPayment,
-                  child: const Text('PAYMENT'),
+                  onPressed: _isSubmitting ? null : _goToPayment,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('PAYMENT'),
                 ),
               ],
             ),

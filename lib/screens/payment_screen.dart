@@ -2,17 +2,60 @@ import 'package:flutter/material.dart';
 
 import '../models/booking.dart';
 import '../services/dummy_data_service.dart';
+import '../services/payment_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/primary_card.dart';
 import 'ticket_screen.dart';
 
-class PaymentScreen extends StatelessWidget {
+class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key, required this.booking});
 
   final Booking booking;
 
+  @override
+  State<PaymentScreen> createState() => _PaymentScreenState();
+}
+
+class _PaymentScreenState extends State<PaymentScreen> {
+  final _paymentService = PaymentService();
+  bool _isSubmitting = false;
+
   String get _total =>
-      'Rp ${booking.total.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]}.')}';
+      'Rp ${widget.booking.total.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]}.')}';
+
+  Future<void> _confirmPayment() async {
+    setState(() => _isSubmitting = true);
+    try {
+      final confirmedBooking = await _paymentService.confirmPayment(
+        widget.booking,
+      );
+      DummyDataService.addBooking(confirmedBooking);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => TicketScreen(booking: confirmedBooking),
+        ),
+      );
+    } catch (error) {
+      final confirmedBooking = widget.booking.copyWith(status: 'Terjadwal');
+      DummyDataService.addBooking(confirmedBooking);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Payment API belum berhasil: $error. Tiket lokal dibuat dulu.',
+          ),
+        ),
+      );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => TicketScreen(booking: confirmedBooking),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +82,7 @@ class PaymentScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(booking.code),
+                    Text(widget.booking.code),
                   ],
                 ),
               ),
@@ -60,7 +103,7 @@ class PaymentScreen extends StatelessWidget {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.account_balance_wallet_rounded),
-                      title: Text(booking.paymentMethod),
+                      title: Text(widget.booking.paymentMethod),
                       subtitle: const Text(
                         'Status: menunggu konfirmasi pembayaran',
                       ),
@@ -70,18 +113,17 @@ class PaymentScreen extends StatelessWidget {
               ),
               const SizedBox(height: 22),
               ElevatedButton(
-                onPressed: () {
-                  final confirmedBooking = booking.copyWith(
-                    status: 'Terjadwal',
-                  );
-                  DummyDataService.addBooking(confirmedBooking);
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (_) => TicketScreen(booking: confirmedBooking),
-                    ),
-                  );
-                },
-                child: const Text('KONFIRMASI PEMBAYARAN'),
+                onPressed: _isSubmitting ? null : _confirmPayment,
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('KONFIRMASI PEMBAYARAN'),
               ),
             ],
           ),

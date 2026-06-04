@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../services/dummy_data_service.dart';
 import '../widgets/primary_card.dart';
-import 'doctor_detail_screen.dart';
+import 'doctor_list_screen.dart';
 
 class PaymentEntryScreen extends StatelessWidget {
   const PaymentEntryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final doctor = DummyDataService.doctors.first;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Booking')),
       body: SafeArea(
@@ -34,9 +31,7 @@ class PaymentEntryScreen extends StatelessWidget {
                 const SizedBox(height: 18),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => DoctorDetailScreen(doctor: doctor),
-                    ),
+                    MaterialPageRoute(builder: (_) => const DoctorListScreen()),
                   ),
                   child: const Text('PILIH JADWAL'),
                 ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../constants/api_config.dart';
+import 'session_manager.dart';
 
 class ApiException implements Exception {
   const ApiException(this.message, {this.statusCode, this.uri});
@@ -29,7 +30,11 @@ class ApiService {
   }
 
   Future<Map<String, String>> _headers() async {
-    return {'Content-Type': 'application/json'};
+    return {
+      'Content-Type': 'application/json',
+      if (SessionManager.hasSession)
+        'Authorization': 'Bearer ${SessionManager.token}',
+    };
   }
 
   Future<dynamic> get(String path) async {
@@ -51,6 +56,20 @@ class ApiService {
     try {
       final response = await _client
           .post(uri, headers: await _headers(), body: jsonEncode(body))
+          .timeout(_timeout);
+      return _decode(response, uri);
+    } on ApiException {
+      rethrow;
+    } catch (error) {
+      throw _connectionException(uri, error);
+    }
+  }
+
+  Future<dynamic> put(String path, Map<String, dynamic> body) async {
+    final uri = _uri(path);
+    try {
+      final response = await _client
+          .put(uri, headers: await _headers(), body: jsonEncode(body))
           .timeout(_timeout);
       return _decode(response, uri);
     } on ApiException {

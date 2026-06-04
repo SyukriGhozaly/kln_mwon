@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../services/dummy_data_service.dart';
+import '../core/services/session_manager.dart';
+import '../services/profile_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/primary_card.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({super.key});
+  const EditProfileScreen({super.key, this.profile});
+
+  final ProfileData? profile;
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -13,16 +16,80 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _addressController;
+  final _profileService = ProfileService();
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = widget.profile ?? _profileFromSession();
+    _nameController = TextEditingController(text: profile.name);
+    _emailController = TextEditingController(text: profile.email);
+    _phoneController = TextEditingController(text: profile.phone);
+    _addressController = TextEditingController(text: profile.address);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    super.dispose();
+  }
 
   String? _required(String? value) =>
       value == null || value.isEmpty ? 'Field wajib diisi' : null;
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Profil berhasil disimpan.')));
-    Navigator.of(context).pop();
+
+    setState(() => _isSaving = true);
+    final profile = ProfileData(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      address: _addressController.text.trim(),
+    );
+
+    try {
+      await _profileService.updateProfile(profile);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profil berhasil disimpan.')),
+      );
+      Navigator.of(context).pop();
+    } catch (error) {
+      final token = SessionManager.token;
+      if (token != null && token.isNotEmpty) {
+        SessionManager.save(newToken: token, newUser: profile.toJson());
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Profile API belum berhasil: $error. Data lokal disimpan dulu.',
+          ),
+        ),
+      );
+      Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  ProfileData _profileFromSession() {
+    final user = SessionManager.user ?? const <String, dynamic>{};
+    return ProfileData.fromJson({
+      'name': user['name'] ?? user['nama'] ?? '',
+      'email': user['email'] ?? '',
+      'phone': user['phone'] ?? user['no_hp'] ?? '',
+      'address': user['address'] ?? user['alamat'] ?? 'Jl. Sehat Mawon No. 10',
+    });
   }
 
   @override
@@ -48,32 +115,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   const SizedBox(height: 18),
                   TextFormField(
-                    initialValue: DummyDataService.userName,
+                    controller: _nameController,
                     decoration: const InputDecoration(labelText: 'Nama'),
                     validator: _required,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    initialValue: DummyDataService.userEmail,
+                    controller: _emailController,
                     decoration: const InputDecoration(labelText: 'Email'),
                     validator: _required,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    initialValue: DummyDataService.userPhone,
+                    controller: _phoneController,
                     decoration: const InputDecoration(labelText: 'No HP'),
                     validator: _required,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    initialValue: 'Jl. Sehat Mawon No. 10',
+                    controller: _addressController,
                     minLines: 2,
                     maxLines: 3,
                     decoration: const InputDecoration(labelText: 'Alamat'),
                     validator: _required,
                   ),
                   const SizedBox(height: 18),
-                  ElevatedButton(onPressed: _save, child: const Text('SAVE')),
+                  ElevatedButton(
+                    onPressed: _isSaving ? null : _save,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('SAVE'),
+                  ),
                 ],
               ),
             ),

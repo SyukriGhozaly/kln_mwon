@@ -27,6 +27,10 @@ class ApiConfig {
 
   static const loginPath = '/login';
   static const registerPath = '/register';
+  static const logoutPath = '/logout';
+  static const profilePath = '/profile';
   static const doctorsPath = '/doctors';
   static const legacyDoctorsPath = '/admin_doctor';
+  static const bookingsPath = '/bookings';
+  static const paymentsPath = '/payments';
 }
