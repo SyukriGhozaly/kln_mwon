@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../core/services/api_service.dart';
 import '../core/services/session_manager.dart';
 import '../models/doctor.dart';
 import '../services/doctor_service.dart';
@@ -19,13 +18,23 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final Future<List<Doctor>> _loadDoctors = DoctorService().getDoctors();
+  late Future<List<Doctor>> _loadDoctors;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDoctors = DoctorService().getDoctors();
+  }
+
+  void _reloadDoctors() {
+    setState(() => _loadDoctors = DoctorService().getDoctors());
+  }
 
   String get _userName {
     final user = SessionManager.user;
     if (user == null) return 'Pasien';
 
-    for (final key in ['name', 'nama', 'nama_lengkap']) {
+    for (final key in ['name', 'nama', 'nama_lengkap', 'username', 'email']) {
       final value = user[key];
       if (value != null && value.toString().trim().isNotEmpty) {
         return value.toString();
@@ -42,14 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
           future: _loadDoctors,
           builder: (context, snapshot) {
             final doctors = snapshot.data ?? const <Doctor>[];
-            final isLoading =
-                snapshot.connectionState == ConnectionState.waiting;
-            final error = snapshot.error;
-            final errorMessage = error is ApiException
-                ? error.message
-                : error == null
-                ? null
-                : 'Gagal memuat dokter dari API.';
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -144,12 +145,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () => widget.onOpenTab(1),
                   ),
                   const SizedBox(height: 12),
-                  if (isLoading)
+                  if (snapshot.connectionState == ConnectionState.waiting)
                     const Center(child: CircularProgressIndicator())
-                  else if (errorMessage != null)
-                    _ApiInlineError(message: errorMessage)
+                  else if (snapshot.hasError)
+                    _InlineState(
+                      message: 'Gagal memuat dokter dari API.',
+                      onRetry: _reloadDoctors,
+                    )
                   else if (doctors.isEmpty)
-                    const Text('Data dokter belum tersedia.')
+                    _InlineState(
+                      message: 'Belum ada dokter dari API.',
+                      onRetry: _reloadDoctors,
+                    )
                   else
                     ...doctors
                         .take(2)
@@ -167,12 +174,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                  if (!isLoading &&
-                      errorMessage == null &&
-                      doctors.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    const _SectionTitle(title: 'Jadwal Terdekat'),
-                    const SizedBox(height: 12),
+                  const SizedBox(height: 10),
+                  const _SectionTitle(title: 'Jadwal Terdekat'),
+                  const SizedBox(height: 12),
+                  if (doctors.isEmpty)
+                    const PrimaryCard(child: Text('Jadwal belum tersedia.'))
+                  else
                     PrimaryCard(
                       child: Row(
                         children: [
@@ -183,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              '${doctors.first.name} - Hari ini pukul ${doctors.first.availableTimes.first}',
+                              '${doctors.first.name} - ${doctors.first.practiceTime}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                               ),
@@ -192,12 +199,32 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-                  ],
                 ],
               ),
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _InlineState extends StatelessWidget {
+  const _InlineState({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return PrimaryCard(
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, color: AppColors.warning),
+          const SizedBox(width: 10),
+          Expanded(child: Text(message)),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
       ),
     );
   }
@@ -234,17 +261,6 @@ class _QuickMenu extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _ApiInlineError extends StatelessWidget {
-  const _ApiInlineError({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return PrimaryCard(child: Text(message, textAlign: TextAlign.center));
   }
 }
 

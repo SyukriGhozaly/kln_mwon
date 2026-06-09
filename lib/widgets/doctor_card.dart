@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/constants/api_config.dart';
 import '../models/doctor.dart';
 import '../theme/app_theme.dart';
 import 'primary_card.dart';
@@ -24,11 +25,16 @@ class DoctorCard extends StatelessWidget {
           CircleAvatar(
             radius: 30,
             backgroundColor: AppColors.lightBlue,
-            child: const Icon(
-              Icons.person_rounded,
-              color: AppColors.primary,
-              size: 34,
-            ),
+            backgroundImage: _photoUrl == null
+                ? null
+                : NetworkImage(_photoUrl!),
+            child: _photoUrl == null
+                ? const Icon(
+                    Icons.person_rounded,
+                    color: AppColors.primary,
+                    size: 34,
+                  )
+                : null,
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -62,5 +68,15 @@ class DoctorCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String? get _photoUrl {
+    final photo = doctor.imageUrl.trim();
+    if (photo.isEmpty) return null;
+    if (photo.startsWith('http://') || photo.startsWith('https://')) {
+      return photo;
+    }
+    final path = photo.startsWith('/') ? photo : '/$photo';
+    return '${ApiConfig.baseUrl}$path';
   }
 }

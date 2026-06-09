@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/api_service.dart';
 import '../models/booking.dart';
 import '../services/payment_service.dart';
 import '../theme/app_theme.dart';
@@ -34,14 +35,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
           builder: (_) => TicketScreen(booking: confirmedBooking),
         ),
       );
+    } on ApiException catch (error) {
+      _showError(error.message);
     } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Payment API gagal: $error')));
+      _showError('Konfirmasi pembayaran gagal. $error');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

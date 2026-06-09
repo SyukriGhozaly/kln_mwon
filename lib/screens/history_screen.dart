@@ -14,8 +14,17 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  late final Future<List<Booking>> _loadBookings = BookingService()
-      .getBookings();
+  late Future<List<Booking>> _loadBookings;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookings = BookingService().getBookings();
+  }
+
+  void _reload() {
+    setState(() => _loadBookings = BookingService().getBookings());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,25 +39,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
             }
 
             if (snapshot.hasError) {
-              final error = snapshot.error;
-              final message = error is ApiException
-                  ? error.message
-                  : 'Gagal memuat riwayat booking dari API.';
-              return _ApiError(message: message);
+              final message = snapshot.error is ApiException
+                  ? (snapshot.error as ApiException).message
+                  : snapshot.error.toString();
+              return _StateMessage(
+                message: 'Gagal memuat riwayat.\n$message',
+                actionText: 'Coba lagi',
+                onAction: _reload,
+              );
             }
 
             final bookings = snapshot.data ?? const <Booking>[];
             if (bookings.isEmpty) {
-              return const Center(child: Text('Belum ada riwayat booking.'));
+              return _StateMessage(
+                message: 'Belum ada riwayat booking dari API.',
+                actionText: 'Muat ulang',
+                onAction: _reload,
+              );
             }
 
             return ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: bookings.length,
               separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return _HistoryCard(booking: bookings[index]);
-              },
+              itemBuilder: (context, index) =>
+                  _HistoryCard(booking: bookings[index]),
             );
           },
         ),
@@ -57,17 +72,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
-class _ApiError extends StatelessWidget {
-  const _ApiError({required this.message});
+class _StateMessage extends StatelessWidget {
+  const _StateMessage({
+    required this.message,
+    required this.actionText,
+    required this.onAction,
+  });
 
   final String message;
+  final String actionText;
+  final VoidCallback onAction;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Text(message, textAlign: TextAlign.center),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.receipt_long_outlined, size: 48),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            OutlinedButton(onPressed: onAction, child: Text(actionText)),
+          ],
+        ),
       ),
     );
   }

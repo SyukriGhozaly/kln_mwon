@@ -74,12 +74,20 @@ class Booking {
               'poli',
               'nama_poli',
             ], fallback: 'Poli'),
+            phone: '',
+            email: '',
             practiceTime: _readString(json, [
               'practice_time',
               'jadwal_praktik',
             ], fallback: '-'),
             imageUrl: _readString(json, ['image_url', 'foto']),
-            availableDates: const ['Hari ini'],
+            availableDates: [
+              _readString(json, [
+                'date',
+                'tanggal',
+                'tanggal_booking',
+              ], fallback: '-'),
+            ],
             availableTimes: [
               _readString(json, [
                 'time',

@@ -21,45 +21,45 @@ class PaymentService {
     });
 
     final payload = _extractObject(response);
-    if (payload.isEmpty) {
-      return booking.copyWith(status: 'Terjadwal');
-    }
-
-    return Booking.fromJson(payload).copyWith(
+    final source = payload.isEmpty ? <String, dynamic>{} : payload;
+    return Booking.fromJson({
+      ...source,
+      if (source.isEmpty) 'status': 'Terjadwal',
+    }).copyWith(
       id: booking.id,
       code:
-          payload['code']?.toString() ??
-          payload['booking_code']?.toString() ??
-          payload['kode_booking']?.toString() ??
+          source['code']?.toString() ??
+          source['booking_code']?.toString() ??
+          source['kode_booking']?.toString() ??
           booking.code,
       queueNumber:
-          payload['queue_number']?.toString() ??
-          payload['nomor_antrian']?.toString() ??
-          payload['no_antrian']?.toString() ??
+          source['queue_number']?.toString() ??
+          source['nomor_antrian']?.toString() ??
+          source['no_antrian']?.toString() ??
           booking.queueNumber,
       patientName:
-          payload['patient_name']?.toString() ??
-          payload['nama_pasien']?.toString() ??
+          source['patient_name']?.toString() ??
+          source['nama_pasien']?.toString() ??
           booking.patientName,
       doctor: booking.doctor,
       date:
-          payload['date']?.toString() ??
-          payload['tanggal']?.toString() ??
+          source['date']?.toString() ??
+          source['tanggal']?.toString() ??
           booking.date,
       time:
-          payload['time']?.toString() ??
-          payload['jam']?.toString() ??
+          source['time']?.toString() ??
+          source['jam']?.toString() ??
           booking.time,
       complaint:
-          payload['complaint']?.toString() ??
-          payload['keluhan']?.toString() ??
+          source['complaint']?.toString() ??
+          source['keluhan']?.toString() ??
           booking.complaint,
       paymentMethod:
-          payload['payment_method']?.toString() ??
-          payload['metode_pembayaran']?.toString() ??
+          source['payment_method']?.toString() ??
+          source['metode_pembayaran']?.toString() ??
           booking.paymentMethod,
-      status: payload['status']?.toString() ?? 'Terjadwal',
-      total: int.tryParse(payload['total']?.toString() ?? '') ?? booking.total,
+      status: source['status']?.toString() ?? 'Terjadwal',
+      total: int.tryParse(source['total']?.toString() ?? '') ?? booking.total,
     );
   }
 

@@ -55,11 +55,12 @@ class AuthService {
   }
 
   Future<bool> hasSession() async {
+    await SessionManager.load();
     return SessionManager.hasSession;
   }
 
   Future<void> saveSession(AuthSession session) async {
-    SessionManager.save(newToken: session.token, newUser: session.user);
+    await SessionManager.save(newToken: session.token, newUser: session.user);
   }
 
   Future<void> logout() async {
@@ -68,7 +69,7 @@ class AuthService {
     } on ApiException {
       // Local logout must still work when the backend token is expired/offline.
     } finally {
-      SessionManager.clear();
+      await SessionManager.clear();
     }
   }
 
@@ -81,13 +82,46 @@ class AuthService {
         ? response['data'] as Map<String, dynamic>
         : response;
 
-    final token = payload['token']?.toString();
-    final user = payload['user'];
+    final token =
+        payload['token']?.toString() ??
+        payload['access_token']?.toString() ??
+        payload['bearer_token']?.toString();
+    final user = _userFromPayload(payload);
 
-    if (token == null || token.isEmpty || user is! Map<String, dynamic>) {
+    if (token == null || token.isEmpty || user.isEmpty) {
       throw const ApiException('Data sesi dari server tidak lengkap');
     }
 
     return AuthSession(token: token, user: user);
+  }
+
+  Map<String, dynamic> _userFromPayload(Map<String, dynamic> payload) {
+    final user = payload['user'] ?? payload['pasien'] ?? payload['patient'];
+    if (user is Map<String, dynamic>) return user;
+    if (user is Map) {
+      return user.map((key, value) => MapEntry(key.toString(), value));
+    }
+
+    final dataUser = <String, dynamic>{};
+    for (final key in [
+      'id',
+      'user_id',
+      'id_user',
+      'name',
+      'nama',
+      'nama_lengkap',
+      'username',
+      'email',
+      'phone',
+      'no_hp',
+      'role',
+    ]) {
+      final value = payload[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        dataUser[key] = value;
+      }
+    }
+
+    return dataUser;
   }
 }

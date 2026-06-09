@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/api_service.dart';
 import '../core/services/auth_service.dart';
 import '../core/services/session_manager.dart';
 import '../services/profile_service.dart';
@@ -17,28 +18,28 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late final Future<void> _loadProfile = _fetchProfile();
+  late Future<void> _loadProfile;
   ProfileData _profile = ProfileData(
     name: _sessionValue(['name', 'nama'], 'Pasien'),
     email: _sessionValue(['email'], '-'),
     phone: _sessionValue(['phone', 'no_hp'], '-'),
     address: _sessionValue(['address', 'alamat'], '-'),
   );
-  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile = _fetchProfile();
+  }
 
   Future<void> _fetchProfile() async {
-    try {
-      final profile = await ProfileService().getProfile();
-      if (!mounted) return;
-      setState(() {
-        _profile = profile;
-        _errorMessage = null;
-      });
-    } catch (error) {
-      debugPrint('Gagal memuat profile dari API: $error');
-      if (!mounted) return;
-      setState(() => _errorMessage = 'Gagal memuat profil dari API: $error');
-    }
+    final profile = await ProfileService().getProfile();
+    if (!mounted) return;
+    setState(() => _profile = profile);
+  }
+
+  void _reload() {
+    setState(() => _loadProfile = _fetchProfile());
   }
 
   Future<void> _logout() async {
@@ -71,6 +72,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: FutureBuilder<void>(
           future: _loadProfile,
           builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              final message = snapshot.error is ApiException
+                  ? (snapshot.error as ApiException).message
+                  : snapshot.error.toString();
+              return _ProfileState(
+                message: 'Gagal memuat profil.\n$message',
+                onRetry: _reload,
+              );
+            }
+
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -97,14 +112,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _profile.email,
                     style: const TextStyle(color: AppColors.textGrey),
                   ),
-                  if (_errorMessage != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppColors.danger),
-                    ),
-                  ],
                   const SizedBox(height: 20),
                   PrimaryCard(
                     padding: EdgeInsets.zero,
@@ -181,6 +188,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileState extends StatelessWidget {
+  const _ProfileState({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.person_off_outlined, size: 48),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            OutlinedButton(onPressed: onRetry, child: const Text('Coba lagi')),
+          ],
         ),
       ),
     );

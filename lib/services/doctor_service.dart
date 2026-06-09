@@ -17,6 +17,8 @@ class DoctorService {
     final rawList = switch (response) {
       List<dynamic> value => value,
       {'data': List<dynamic> value} => value,
+      {'data': {'doctors': List<dynamic> value}} => value,
+      {'data': {'dokter': List<dynamic> value}} => value,
       {'doctors': List<dynamic> value} => value,
       {'dokter': List<dynamic> value} => value,
       _ => const <dynamic>[],

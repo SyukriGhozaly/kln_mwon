@@ -1,21 +1,76 @@
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 class SessionManager {
   const SessionManager._();
 
+  static const _tokenKey = 'auth_token';
+  static const _userKey = 'auth_user';
+
   static String? token;
   static Map<String, dynamic>? user;
+  static bool _loaded = false;
 
   static bool get hasSession => token != null && token!.isNotEmpty;
 
-  static void save({
-    required String newToken,
-    required Map<String, dynamic> newUser,
-  }) {
-    token = newToken;
-    user = newUser;
+  static Future<void> load() async {
+    if (_loaded) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    token = prefs.getString(_tokenKey);
+
+    final rawUser = prefs.getString(_userKey);
+    if (rawUser != null && rawUser.isNotEmpty) {
+      final decoded = jsonDecode(rawUser);
+      if (decoded is Map) {
+        user = decoded.map((key, value) => MapEntry(key.toString(), value));
+      }
+    }
+
+    _loaded = true;
   }
 
-  static void clear() {
+  static Future<void> save({
+    required String newToken,
+    required Map<String, dynamic> newUser,
+  }) async {
+    token = newToken;
+    user = _sessionUser(newUser);
+    _loaded = true;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, newToken);
+    await prefs.setString(_userKey, jsonEncode(user));
+  }
+
+  static Map<String, dynamic> _sessionUser(Map<String, dynamic> source) {
+    final stored = <String, dynamic>{};
+    for (final key in [
+      'id',
+      'user_id',
+      'id_user',
+      'name',
+      'nama',
+      'nama_lengkap',
+      'username',
+      'email',
+    ]) {
+      final value = source[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        stored[key] = value;
+      }
+    }
+    return stored;
+  }
+
+  static Future<void> clear() async {
     token = null;
     user = null;
+    _loaded = true;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_userKey);
   }
 }

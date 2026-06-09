@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/api_service.dart';
 import '../core/services/session_manager.dart';
 import '../models/doctor.dart';
 import '../services/booking_service.dart';
@@ -29,7 +30,7 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
     text: 'Konsultasi kesehatan',
   );
   final _bookingService = BookingService();
-  String _paymentMethod = 'QRIS';
+  String _paymentMethod = 'cash';
   bool _isSubmitting = false;
 
   @override
@@ -55,14 +56,20 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => PaymentScreen(booking: booking)),
       );
+    } on ApiException catch (error) {
+      _showError(error.message);
     } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Booking API gagal: $error')));
+      _showError('Booking gagal. $error');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _profileValue(List<String> keys, String fallback) {
@@ -134,18 +141,18 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                 DropdownButtonFormField<String>(
                   initialValue: _paymentMethod,
                   items: const [
-                    DropdownMenuItem(value: 'QRIS', child: Text('QRIS')),
                     DropdownMenuItem(
-                      value: 'Transfer Bank',
-                      child: Text('Transfer Bank'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Bayar di Tempat',
+                      value: 'cash',
                       child: Text('Bayar di Tempat'),
+                    ),
+                    DropdownMenuItem(value: 'qris', child: Text('QRIS')),
+                    DropdownMenuItem(
+                      value: 'transfer',
+                      child: Text('Transfer Bank'),
                     ),
                   ],
                   onChanged: (value) =>
-                      setState(() => _paymentMethod = value ?? 'QRIS'),
+                      setState(() => _paymentMethod = value ?? 'cash'),
                 ),
                 const SizedBox(height: 22),
                 ElevatedButton(

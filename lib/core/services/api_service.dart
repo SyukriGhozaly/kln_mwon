@@ -103,6 +103,14 @@ class ApiService {
       );
     }
 
+    if (decoded is Map<String, dynamic> && decoded['success'] == false) {
+      throw ApiException(
+        decoded['message']?.toString() ?? 'Request API gagal',
+        statusCode: response.statusCode,
+        uri: uri,
+      );
+    }
+
     return decoded;
   }
 

@@ -22,7 +22,20 @@ class BookingService {
     required String paymentMethod,
   }) async {
     final userId = _currentUserId();
-    final body = <String, dynamic>{
+    if (!SessionManager.hasSession) {
+      throw const ApiException(
+        'Sesi login tidak ditemukan. Silakan login ulang.',
+      );
+    }
+    if (doctor.id <= 0) {
+      throw const ApiException('Data dokter tidak valid untuk booking.');
+    }
+    if (date.trim().isEmpty || time.trim().isEmpty) {
+      throw const ApiException('Tanggal dan jam booking wajib dipilih.');
+    }
+
+    final response = await _api.post(ApiConfig.bookingsPath, {
+      ..._userPayload(userId),
       'doctor_id': doctor.id,
       'id_dokter': doctor.id,
       'date': date,
@@ -33,13 +46,8 @@ class BookingService {
       'keluhan': complaint,
       'payment_method': paymentMethod,
       'metode_pembayaran': paymentMethod,
-      'total': doctor.fee,
-    };
-    if (userId != null) {
-      body.addAll({'user_id': userId, 'id_user': userId});
-    }
-
-    final response = await _api.post(ApiConfig.bookingsPath, body);
+      'total': doctor.fee > 0 ? doctor.fee : 50000,
+    });
 
     final payload = _extractObject(response);
     return Booking.fromJson(payload).copyWith(
@@ -73,10 +81,18 @@ class BookingService {
     return null;
   }
 
+  Map<String, int> _userPayload(int? userId) {
+    if (userId == null) return const {};
+    return {'user_id': userId, 'id_user': userId};
+  }
+
   List<Map<String, dynamic>> _extractList(dynamic response) {
     final rawList = switch (response) {
       List<dynamic> value => value,
       {'data': List<dynamic> value} => value,
+      {'data': {'bookings': List<dynamic> value}} => value,
+      {'data': {'booking': List<dynamic> value}} => value,
+      {'data': {'riwayat': List<dynamic> value}} => value,
       {'bookings': List<dynamic> value} => value,
       {'booking': List<dynamic> value} => value,
       {'riwayat': List<dynamic> value} => value,

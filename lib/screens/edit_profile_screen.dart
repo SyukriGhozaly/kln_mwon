@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/api_service.dart';
 import '../core/services/session_manager.dart';
 import '../services/profile_service.dart';
 import '../theme/app_theme.dart';
@@ -63,14 +64,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SnackBar(content: Text('Profil berhasil disimpan.')),
       );
       Navigator.of(context).pop();
+    } on ApiException catch (error) {
+      _showError(error.message);
     } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Profile API gagal: $error')));
+      _showError('Profil gagal disimpan. $error');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   ProfileData _profileFromSession() {

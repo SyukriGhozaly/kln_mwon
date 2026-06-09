@@ -55,7 +55,7 @@ class ProfileService {
   Future<ProfileData> getProfile() async {
     final response = await _api.get(ApiConfig.profilePath);
     final profile = ProfileData.fromJson(_extractObject(response));
-    _saveUser(profile);
+    await _saveUser(profile);
     return profile;
   }
 
@@ -63,7 +63,7 @@ class ProfileService {
     final response = await _api.put(ApiConfig.profilePath, profile.toJson());
     final updated = ProfileData.fromJson(_extractObject(response));
     final value = updated.name.isEmpty ? profile : updated;
-    _saveUser(value);
+    await _saveUser(value);
     return value;
   }
 
@@ -100,7 +100,7 @@ class ProfileService {
     return normalized;
   }
 
-  void _saveUser(ProfileData profile) {
+  Future<void> _saveUser(ProfileData profile) async {
     final token = SessionManager.token;
     if (token == null || token.isEmpty) return;
     if (profile.name.isEmpty &&
