@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../services/dummy_data_service.dart';
+import '../core/services/api_service.dart';
+import '../models/doctor.dart';
 import '../services/doctor_service.dart';
 import '../widgets/doctor_card.dart';
 import 'doctor_detail_screen.dart';
@@ -13,65 +14,39 @@ class DoctorListScreen extends StatefulWidget {
 }
 
 class _DoctorListScreenState extends State<DoctorListScreen> {
-  late final Future<void> _loadDoctors = _fetchDoctors();
-  var _doctors = DummyDataService.doctors;
-  String? _errorMessage;
-
-  Future<void> _fetchDoctors() async {
-    try {
-      final doctors = await DoctorService().getDoctors();
-      if (!mounted || doctors.isEmpty) return;
-      setState(() {
-        _doctors = doctors;
-        _errorMessage = null;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      debugPrint('Gagal memuat dokter dari API: $error');
-      setState(() {
-        _errorMessage = 'API belum tersambung, sementara memakai data dummy.';
-      });
-    }
-  }
+  late final Future<List<Doctor>> _loadDoctors = DoctorService().getDoctors();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Pelayanan Klinik')),
       body: SafeArea(
-        child: FutureBuilder<void>(
+        child: FutureBuilder<List<Doctor>>(
           future: _loadDoctors,
           builder: (context, snapshot) {
-            final doctors = _doctors;
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              final error = snapshot.error;
+              final message = error is ApiException
+                  ? error.message
+                  : 'Gagal memuat daftar dokter dari API.';
+              return _ApiError(message: message);
+            }
+
+            final doctors = snapshot.data ?? const <Doctor>[];
+            if (doctors.isEmpty) {
+              return const Center(child: Text('Data dokter belum tersedia.'));
+            }
+
             return ListView.separated(
               padding: const EdgeInsets.all(16),
-              itemCount: doctors.length + (_errorMessage == null ? 0 : 1),
+              itemCount: doctors.length,
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                if (_errorMessage != null && index == 0) {
-                  return Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFFED7AA)),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.info_outline_rounded,
-                          color: Color(0xFFC2410C),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(child: Text(_errorMessage!)),
-                      ],
-                    ),
-                  );
-                }
-
-                final offset = _errorMessage == null ? index : index - 1;
-                final doctor = doctors[offset];
+                final doctor = doctors[index];
                 return DoctorCard(
                   doctor: doctor,
                   actionText: 'Detail',
@@ -85,6 +60,22 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _ApiError extends StatelessWidget {
+  const _ApiError({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(message, textAlign: TextAlign.center),
       ),
     );
   }

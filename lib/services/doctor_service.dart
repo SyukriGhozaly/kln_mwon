@@ -8,13 +8,7 @@ class DoctorService {
   final ApiService _api;
 
   Future<List<Doctor>> getDoctors() async {
-    dynamic response;
-    try {
-      response = await _api.get(ApiConfig.doctorsPath);
-    } on ApiException {
-      response = await _api.get(ApiConfig.legacyDoctorsPath);
-    }
-
+    final response = await _api.get(ApiConfig.doctorsPath);
     final list = _extractList(response);
     return list.map((item) => Doctor.fromJson(item)).toList();
   }

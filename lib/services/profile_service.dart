@@ -68,22 +68,33 @@ class ProfileService {
   }
 
   Map<String, dynamic> _extractObject(dynamic response) {
-    final payload = switch (response) {
-      {'data': Map value} => value,
-      {'user': Map value} => value,
-      {'profile': Map value} => value,
-      Map value => value,
-      _ => SessionManager.user ?? const <String, dynamic>{},
-    };
+    if (response is! Map) {
+      return SessionManager.user ?? const <String, dynamic>{};
+    }
 
-    final normalized = payload.map(
+    final normalized = response.map(
       (key, value) => MapEntry(key.toString(), value),
     );
-    for (final key in ['user', 'profile']) {
+    for (final key in ['data', 'user', 'profile']) {
       final nested = normalized[key];
       if (nested is Map) {
         return nested.map((key, value) => MapEntry(key.toString(), value));
       }
+    }
+
+    final hasProfileFields = [
+      'name',
+      'nama',
+      'nama_lengkap',
+      'email',
+      'phone',
+      'no_hp',
+      'address',
+      'alamat',
+    ].any((key) => normalized[key] != null);
+
+    if (!hasProfileFields) {
+      return SessionManager.user ?? const <String, dynamic>{};
     }
 
     return normalized;
@@ -92,6 +103,11 @@ class ProfileService {
   void _saveUser(ProfileData profile) {
     final token = SessionManager.token;
     if (token == null || token.isEmpty) return;
+    if (profile.name.isEmpty &&
+        profile.email.isEmpty &&
+        profile.phone.isEmpty) {
+      return;
+    }
 
     SessionManager.save(newToken: token, newUser: profile.toJson());
   }

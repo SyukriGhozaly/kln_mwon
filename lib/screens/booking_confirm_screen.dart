@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../core/services/session_manager.dart';
-import '../models/booking.dart';
 import '../models/doctor.dart';
 import '../services/booking_service.dart';
-import '../services/dummy_data_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/primary_card.dart';
 import 'payment_screen.dart';
@@ -58,36 +56,13 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
         MaterialPageRoute(builder: (_) => PaymentScreen(booking: booking)),
       );
     } catch (error) {
-      final booking = _dummyBooking();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Booking API belum berhasil: $error. Memakai data lokal dulu.',
-          ),
-        ),
-      );
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => PaymentScreen(booking: booking)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Booking API gagal: $error')));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
-  }
-
-  Booking _dummyBooking() {
-    return Booking(
-      code: DummyDataService.nextBookingCode(),
-      queueNumber: DummyDataService.nextQueueNumber(widget.doctor.polyclinic),
-      patientName: _profileValue(['name', 'nama'], DummyDataService.userName),
-      doctor: widget.doctor,
-      date: widget.date,
-      time: widget.time,
-      complaint: _complaintController.text.trim(),
-      paymentMethod: _paymentMethod,
-      status: 'Menunggu pembayaran',
-      total: widget.doctor.fee,
-    );
   }
 
   String _profileValue(List<String> keys, String fallback) {
@@ -118,14 +93,8 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                 _InfoCard(
                   title: 'Data Pasien',
                   rows: {
-                    'Nama': _profileValue([
-                      'name',
-                      'nama',
-                    ], DummyDataService.userName),
-                    'No HP': _profileValue([
-                      'phone',
-                      'no_hp',
-                    ], DummyDataService.userPhone),
+                    'Nama': _profileValue(['name', 'nama'], 'Pasien'),
+                    'No HP': _profileValue(['phone', 'no_hp'], '-'),
                   },
                 ),
                 const SizedBox(height: 12),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/api_service.dart';
 import '../core/services/session_manager.dart';
-import '../services/dummy_data_service.dart';
+import '../models/doctor.dart';
 import '../services/doctor_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/doctor_card.dart';
@@ -18,22 +19,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final Future<void> _loadDoctors = _fetchDoctors();
-  var _doctors = DummyDataService.doctors;
-
-  Future<void> _fetchDoctors() async {
-    try {
-      final doctors = await DoctorService().getDoctors();
-      if (!mounted || doctors.isEmpty) return;
-      setState(() => _doctors = doctors);
-    } catch (error) {
-      debugPrint('Gagal memuat dokter home dari API: $error');
-    }
-  }
+  late final Future<List<Doctor>> _loadDoctors = DoctorService().getDoctors();
 
   String get _userName {
     final user = SessionManager.user;
-    if (user == null) return DummyDataService.userName;
+    if (user == null) return 'Pasien';
 
     for (final key in ['name', 'nama', 'nama_lengkap']) {
       final value = user[key];
@@ -41,17 +31,25 @@ class _HomeScreenState extends State<HomeScreen> {
         return value.toString();
       }
     }
-    return DummyDataService.userName;
+    return 'Pasien';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: FutureBuilder<void>(
+        child: FutureBuilder<List<Doctor>>(
           future: _loadDoctors,
           builder: (context, snapshot) {
-            final doctors = _doctors;
+            final doctors = snapshot.data ?? const <Doctor>[];
+            final isLoading =
+                snapshot.connectionState == ConnectionState.waiting;
+            final error = snapshot.error;
+            final errorMessage = error is ApiException
+                ? error.message
+                : error == null
+                ? null
+                : 'Gagal memuat dokter dari API.';
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -146,42 +144,55 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () => widget.onOpenTab(1),
                   ),
                   const SizedBox(height: 12),
-                  ...doctors
-                      .take(2)
-                      .map(
-                        (doctor) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: DoctorCard(
-                            doctor: doctor,
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    DoctorDetailScreen(doctor: doctor),
+                  if (isLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else if (errorMessage != null)
+                    _ApiInlineError(message: errorMessage)
+                  else if (doctors.isEmpty)
+                    const Text('Data dokter belum tersedia.')
+                  else
+                    ...doctors
+                        .take(2)
+                        .map(
+                          (doctor) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: DoctorCard(
+                              doctor: doctor,
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      DoctorDetailScreen(doctor: doctor),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                  const SizedBox(height: 10),
-                  const _SectionTitle(title: 'Jadwal Terdekat'),
-                  const SizedBox(height: 12),
-                  PrimaryCard(
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.schedule_rounded,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            '${doctors.first.name} - Hari ini pukul ${doctors.first.availableTimes.first}',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                  if (!isLoading &&
+                      errorMessage == null &&
+                      doctors.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    const _SectionTitle(title: 'Jadwal Terdekat'),
+                    const SizedBox(height: 12),
+                    PrimaryCard(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.schedule_rounded,
+                            color: AppColors.primary,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '${doctors.first.name} - Hari ini pukul ${doctors.first.availableTimes.first}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             );
@@ -223,6 +234,17 @@ class _QuickMenu extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ApiInlineError extends StatelessWidget {
+  const _ApiInlineError({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return PrimaryCard(child: Text(message, textAlign: TextAlign.center));
   }
 }
 

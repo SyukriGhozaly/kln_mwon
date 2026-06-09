@@ -64,19 +64,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
       Navigator.of(context).pop();
     } catch (error) {
-      final token = SessionManager.token;
-      if (token != null && token.isNotEmpty) {
-        SessionManager.save(newToken: token, newUser: profile.toJson());
-      }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Profile API belum berhasil: $error. Data lokal disimpan dulu.',
-          ),
-        ),
-      );
-      Navigator.of(context).pop();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Profile API gagal: $error')));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -88,7 +79,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       'name': user['name'] ?? user['nama'] ?? '',
       'email': user['email'] ?? '',
       'phone': user['phone'] ?? user['no_hp'] ?? '',
-      'address': user['address'] ?? user['alamat'] ?? 'Jl. Sehat Mawon No. 10',
+      'address': user['address'] ?? user['alamat'] ?? '',
     });
   }
 

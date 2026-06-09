@@ -22,9 +22,7 @@ class BookingService {
     required String paymentMethod,
   }) async {
     final userId = _currentUserId();
-    final response = await _api.post(ApiConfig.bookingsPath, {
-      'user_id': ?userId,
-      'id_user': ?userId,
+    final body = <String, dynamic>{
       'doctor_id': doctor.id,
       'id_dokter': doctor.id,
       'date': date,
@@ -36,7 +34,12 @@ class BookingService {
       'payment_method': paymentMethod,
       'metode_pembayaran': paymentMethod,
       'total': doctor.fee,
-    });
+    };
+    if (userId != null) {
+      body.addAll({'user_id': userId, 'id_user': userId});
+    }
+
+    final response = await _api.post(ApiConfig.bookingsPath, body);
 
     final payload = _extractObject(response);
     return Booking.fromJson(payload).copyWith(

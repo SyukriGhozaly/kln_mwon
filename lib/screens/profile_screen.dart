@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../core/services/auth_service.dart';
 import '../core/services/session_manager.dart';
-import '../services/dummy_data_service.dart';
 import '../services/profile_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/primary_card.dart';
@@ -20,19 +19,25 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   late final Future<void> _loadProfile = _fetchProfile();
   ProfileData _profile = ProfileData(
-    name: _sessionValue(['name', 'nama'], DummyDataService.userName),
-    email: _sessionValue(['email'], DummyDataService.userEmail),
-    phone: _sessionValue(['phone', 'no_hp'], DummyDataService.userPhone),
-    address: _sessionValue(['address', 'alamat'], 'Jl. Sehat Mawon No. 10'),
+    name: _sessionValue(['name', 'nama'], 'Pasien'),
+    email: _sessionValue(['email'], '-'),
+    phone: _sessionValue(['phone', 'no_hp'], '-'),
+    address: _sessionValue(['address', 'alamat'], '-'),
   );
+  String? _errorMessage;
 
   Future<void> _fetchProfile() async {
     try {
       final profile = await ProfileService().getProfile();
       if (!mounted) return;
-      setState(() => _profile = profile);
+      setState(() {
+        _profile = profile;
+        _errorMessage = null;
+      });
     } catch (error) {
       debugPrint('Gagal memuat profile dari API: $error');
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Gagal memuat profil dari API: $error');
     }
   }
 
@@ -92,6 +97,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _profile.email,
                     style: const TextStyle(color: AppColors.textGrey),
                   ),
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: AppColors.danger),
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   PrimaryCard(
                     padding: EdgeInsets.zero,

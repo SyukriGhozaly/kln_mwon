@@ -24,14 +24,13 @@ class ApiService {
 
   Uri _uri(String path) {
     final normalizedPath = path.startsWith('/') ? path : '/$path';
-    return Uri.parse(
-      '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}$normalizedPath',
-    );
+    return Uri.parse(ApiConfig.apiBaseUrl + normalizedPath);
   }
 
   Future<Map<String, String>> _headers() async {
     return {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       if (SessionManager.hasSession)
         'Authorization': 'Bearer ${SessionManager.token}',
     };

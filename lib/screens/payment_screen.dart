@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/booking.dart';
-import '../services/dummy_data_service.dart';
 import '../services/payment_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/primary_card.dart';
@@ -29,7 +28,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final confirmedBooking = await _paymentService.confirmPayment(
         widget.booking,
       );
-      DummyDataService.addBooking(confirmedBooking);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -37,21 +35,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
       );
     } catch (error) {
-      final confirmedBooking = widget.booking.copyWith(status: 'Terjadwal');
-      DummyDataService.addBooking(confirmedBooking);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Payment API belum berhasil: $error. Tiket lokal dibuat dulu.',
-          ),
-        ),
-      );
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => TicketScreen(booking: confirmedBooking),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Payment API gagal: $error')));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
