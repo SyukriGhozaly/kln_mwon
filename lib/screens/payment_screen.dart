@@ -20,14 +20,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final _paymentService = PaymentService();
   bool _isSubmitting = false;
 
+  int get _safeTotal => widget.booking.total > 0 ? widget.booking.total : 50000;
+
   String get _total =>
-      'Rp ${widget.booking.total.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]}.')}';
+      'Rp ${_safeTotal.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]}.')}';
 
   Future<void> _confirmPayment() async {
     setState(() => _isSubmitting = true);
     try {
       final confirmedBooking = await _paymentService.confirmPayment(
-        widget.booking,
+        widget.booking.copyWith(total: _safeTotal),
       );
       if (!mounted) return;
       Navigator.of(context).pushReplacement(

@@ -53,18 +53,29 @@ class ProfileService {
   final ApiService _api;
 
   Future<ProfileData> getProfile() async {
-    final response = await _api.get(ApiConfig.profilePath);
-    final profile = ProfileData.fromJson(_extractObject(response));
-    await _saveUser(profile);
-    return profile;
+    try {
+      final response = await _api.get(ApiConfig.profilePath);
+      final profile = ProfileData.fromJson(_extractObject(response));
+      await _saveUser(profile);
+      return profile;
+    } on ApiException catch (error) {
+      if (error.statusCode != null) rethrow;
+      return _profileFromSession();
+    }
   }
 
   Future<ProfileData> updateProfile(ProfileData profile) async {
-    final response = await _api.put(ApiConfig.profilePath, profile.toJson());
-    final updated = ProfileData.fromJson(_extractObject(response));
-    final value = updated.name.isEmpty ? profile : updated;
-    await _saveUser(value);
-    return value;
+    try {
+      final response = await _api.put(ApiConfig.profilePath, profile.toJson());
+      final updated = ProfileData.fromJson(_extractObject(response));
+      final value = updated.name.isEmpty ? profile : updated;
+      await _saveUser(value);
+      return value;
+    } on ApiException catch (error) {
+      if (error.statusCode != null) rethrow;
+      await _saveUser(profile);
+      return profile;
+    }
   }
 
   Map<String, dynamic> _extractObject(dynamic response) {
@@ -108,7 +119,34 @@ class ProfileService {
         profile.phone.isEmpty) {
       return;
     }
+    final mergedUser = _mergeNonEmpty(SessionManager.user, profile.toJson());
 
-    SessionManager.save(newToken: token, newUser: profile.toJson());
+    await SessionManager.save(newToken: token, newUser: mergedUser);
+  }
+
+  Map<String, dynamic> _mergeNonEmpty(
+    Map<String, dynamic>? current,
+    Map<String, dynamic> incoming,
+  ) {
+    final merged = <String, dynamic>{...?current};
+    for (final entry in incoming.entries) {
+      final value = entry.value;
+      if (value != null && value.toString().trim().isNotEmpty) {
+        merged[entry.key] = value;
+      }
+    }
+    return merged;
+  }
+
+  ProfileData _profileFromSession() {
+    final profile = ProfileData.fromJson(SessionManager.user ?? const {});
+    return ProfileData(
+      name: profile.name.isEmpty
+          ? SessionManager.getDisplayName()
+          : profile.name,
+      email: profile.email.isEmpty ? '-' : profile.email,
+      phone: profile.phone.isEmpty ? '-' : profile.phone,
+      address: profile.address.isEmpty ? '-' : profile.address,
+    );
   }
 }

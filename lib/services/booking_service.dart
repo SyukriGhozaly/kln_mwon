@@ -34,6 +34,7 @@ class BookingService {
       throw const ApiException('Tanggal dan jam booking wajib dipilih.');
     }
 
+    final requestTotal = _safeTotal(doctor.fee);
     final response = await _api.post(ApiConfig.bookingsPath, {
       ..._userPayload(userId),
       'doctor_id': doctor.id,
@@ -46,7 +47,7 @@ class BookingService {
       'keluhan': complaint,
       'payment_method': paymentMethod,
       'metode_pembayaran': paymentMethod,
-      'total': doctor.fee > 0 ? doctor.fee : 50000,
+      'total': requestTotal,
     });
 
     final payload = _extractObject(response);
@@ -63,8 +64,21 @@ class BookingService {
           payload['payment_method']?.toString() ??
           payload['metode_pembayaran']?.toString() ??
           paymentMethod,
-      total: int.tryParse(payload['total']?.toString() ?? '') ?? doctor.fee,
+      total: _safeTotal(_readTotal(payload) ?? requestTotal),
     );
+  }
+
+  int _safeTotal(int total) => total > 0 ? total : 50000;
+
+  int? _readTotal(Map<String, dynamic> payload) {
+    for (final key in ['total', 'biaya', 'fee']) {
+      final value = payload[key];
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      final parsed = int.tryParse(value?.toString() ?? '');
+      if (parsed != null) return parsed;
+    }
+    return null;
   }
 
   int? _currentUserId() {

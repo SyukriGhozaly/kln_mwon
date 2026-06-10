@@ -10,7 +10,36 @@ class DoctorService {
   Future<List<Doctor>> getDoctors() async {
     final response = await _api.get(ApiConfig.doctorsPath);
     final list = _extractList(response);
-    return list.map((item) => Doctor.fromJson(item)).toList();
+    return list.map((item) => Doctor.fromJson(_withPhotoUrl(item))).toList();
+  }
+
+  Map<String, dynamic> _withPhotoUrl(Map<String, dynamic> item) {
+    final photo = _readPhoto(item);
+    if (photo == null) return item;
+    return {...item, 'photo': _resolvePhotoUrl(photo)};
+  }
+
+  String? _readPhoto(Map<String, dynamic> item) {
+    for (final key in ['photo', 'foto', 'image_url', 'imageUrl', 'photo_url']) {
+      final value = item[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString().trim();
+      }
+    }
+    return null;
+  }
+
+  String _resolvePhotoUrl(String photo) {
+    if (photo.startsWith('http://') || photo.startsWith('https://')) {
+      return photo;
+    }
+    if (photo.startsWith('/')) {
+      return '${ApiConfig.baseUrl}$photo';
+    }
+    if (photo.startsWith('img/')) {
+      return '${ApiConfig.baseUrl}/$photo';
+    }
+    return '${ApiConfig.baseUrl}/img/$photo';
   }
 
   List<Map<String, dynamic>> _extractList(dynamic response) {

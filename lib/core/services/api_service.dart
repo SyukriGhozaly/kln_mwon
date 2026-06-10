@@ -20,7 +20,7 @@ class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
-  static const _timeout = Duration(seconds: 15);
+  static const _timeout = Duration(seconds: 5);
 
   Uri _uri(String path) {
     final normalizedPath = path.startsWith('/') ? path : '/$path';

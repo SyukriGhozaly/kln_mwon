@@ -57,10 +57,11 @@ class Doctor {
           ? 'Jadwal belum tersedia'
           : scheduleText,
       imageUrl: _readString(json, [
+        'photo',
+        'foto',
+        'photo_url',
         'image_url',
         'imageUrl',
-        'foto',
-        'photo',
       ], fallback: ''),
       availableDates: _readStringList(json, [
         'available_dates',

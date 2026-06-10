@@ -14,6 +14,19 @@ class SessionManager {
 
   static bool get hasSession => token != null && token!.isNotEmpty;
 
+  static String getDisplayName() {
+    final currentUser = user;
+    if (currentUser == null) return 'Pasien';
+
+    for (final key in ['name', 'nama', 'nama_lengkap', 'username', 'email']) {
+      final value = currentUser[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    return 'Pasien';
+  }
+
   static Future<void> load() async {
     if (_loaded) return;
 
@@ -22,9 +35,13 @@ class SessionManager {
 
     final rawUser = prefs.getString(_userKey);
     if (rawUser != null && rawUser.isNotEmpty) {
-      final decoded = jsonDecode(rawUser);
-      if (decoded is Map) {
-        user = decoded.map((key, value) => MapEntry(key.toString(), value));
+      try {
+        final decoded = jsonDecode(rawUser);
+        if (decoded is Map) {
+          user = decoded.map((key, value) => MapEntry(key.toString(), value));
+        }
+      } on FormatException {
+        user = null;
       }
     }
 
@@ -55,6 +72,12 @@ class SessionManager {
       'nama_lengkap',
       'username',
       'email',
+      'phone',
+      'no_hp',
+      'telepon',
+      'address',
+      'alamat',
+      'role',
     ]) {
       final value = source[key];
       if (value != null && value.toString().trim().isNotEmpty) {

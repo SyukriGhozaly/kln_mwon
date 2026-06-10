@@ -80,7 +80,13 @@ class Booking {
               'practice_time',
               'jadwal_praktik',
             ], fallback: '-'),
-            imageUrl: _readString(json, ['image_url', 'foto']),
+            imageUrl: _readString(json, [
+              'photo',
+              'foto',
+              'photo_url',
+              'image_url',
+              'imageUrl',
+            ]),
             availableDates: [
               _readString(json, [
                 'date',
@@ -131,7 +137,7 @@ class Booking {
       status: _displayStatus(
         _readString(json, ['status'], fallback: 'Menunggu pembayaran'),
       ),
-      total: _readInt(json, ['total', 'biaya', 'fee']),
+      total: _readInt(json, ['total', 'biaya', 'fee'], fallback: 50000),
     );
   }
 
@@ -181,7 +187,7 @@ class Booking {
   static int _readInt(
     Map<String, dynamic> json,
     List<String> keys, {
-    int fallback = 0,
+    int fallback = 50000,
   }) {
     return _readIntOrNull(json, keys) ?? fallback;
   }

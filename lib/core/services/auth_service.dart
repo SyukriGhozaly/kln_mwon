@@ -26,7 +26,6 @@ class AuthService {
       if (!normalizedLogin.contains('@')) 'username': normalizedLogin,
       'password': password,
     });
-
     final session = _sessionFromResponse(response);
     await saveSession(session);
     return session;
@@ -48,7 +47,6 @@ class AuthService {
       'password': password,
       'password_confirmation': passwordConfirmation,
     });
-
     final session = _sessionFromResponse(response);
     await saveSession(session);
     return session;

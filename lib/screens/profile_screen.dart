@@ -20,7 +20,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   late Future<void> _loadProfile;
   ProfileData _profile = ProfileData(
-    name: _sessionValue(['name', 'nama'], 'Pasien'),
+    name: SessionManager.getDisplayName(),
     email: _sessionValue(['email'], '-'),
     phone: _sessionValue(['phone', 'no_hp'], '-'),
     address: _sessionValue(['address', 'alamat'], '-'),
@@ -130,10 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             if (!mounted) return;
                             setState(() {
                               _profile = ProfileData(
-                                name: _sessionValue([
-                                  'name',
-                                  'nama',
-                                ], _profile.name),
+                                name: SessionManager.getDisplayName(),
                                 email: _sessionValue(['email'], _profile.email),
                                 phone: _sessionValue([
                                   'phone',

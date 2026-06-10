@@ -31,16 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String get _userName {
-    final user = SessionManager.user;
-    if (user == null) return 'Pasien';
-
-    for (final key in ['name', 'nama', 'nama_lengkap', 'username', 'email']) {
-      final value = user[key];
-      if (value != null && value.toString().trim().isNotEmpty) {
-        return value.toString();
-      }
-    }
-    return 'Pasien';
+    return SessionManager.getDisplayName();
   }
 
   @override

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/doctor.dart';
 import '../services/schedule_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/doctor_avatar.dart';
 import '../widgets/primary_card.dart';
 import 'booking_confirm_screen.dart';
 
@@ -123,15 +124,7 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
               PrimaryCard(
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 38,
-                      backgroundColor: AppColors.lightBlue,
-                      child: const Icon(
-                        Icons.person_rounded,
-                        color: AppColors.primary,
-                        size: 44,
-                      ),
-                    ),
+                    DoctorAvatar(doctor: doctor, radius: 38),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(

@@ -9,6 +9,7 @@ class PaymentService {
 
   Future<Booking> confirmPayment(Booking booking) async {
     final bookingIdentifier = booking.id ?? booking.code;
+    final total = _safeTotal(booking.total);
     final response = await _api.post(ApiConfig.paymentsPath, {
       'booking_id': bookingIdentifier,
       'id_booking': bookingIdentifier,
@@ -16,12 +17,17 @@ class PaymentService {
       'kode_booking': booking.code,
       'payment_method': booking.paymentMethod,
       'metode_pembayaran': booking.paymentMethod,
-      'amount': booking.total,
-      'total': booking.total,
+      'amount': total,
+      'total': total,
     });
 
-    final payload = _extractObject(response);
-    final source = payload.isEmpty ? <String, dynamic>{} : payload;
+    return _confirmedBooking(
+      booking.copyWith(total: total),
+      _extractObject(response),
+    );
+  }
+
+  Booking _confirmedBooking(Booking booking, Map<String, dynamic> source) {
     return Booking.fromJson({
       ...source,
       if (source.isEmpty) 'status': 'Terjadwal',
@@ -59,8 +65,21 @@ class PaymentService {
           source['metode_pembayaran']?.toString() ??
           booking.paymentMethod,
       status: source['status']?.toString() ?? 'Terjadwal',
-      total: int.tryParse(source['total']?.toString() ?? '') ?? booking.total,
+      total: _safeTotal(_readTotal(source) ?? booking.total),
     );
+  }
+
+  int _safeTotal(int total) => total > 0 ? total : 50000;
+
+  int? _readTotal(Map<String, dynamic> source) {
+    for (final key in ['total', 'amount', 'biaya', 'fee']) {
+      final value = source[key];
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      final parsed = int.tryParse(value?.toString() ?? '');
+      if (parsed != null) return parsed;
+    }
+    return null;
   }
 
   Map<String, dynamic> _extractObject(dynamic response) {

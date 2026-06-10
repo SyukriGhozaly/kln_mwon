@@ -5,6 +5,7 @@ import '../core/services/session_manager.dart';
 import '../models/doctor.dart';
 import '../services/booking_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/doctor_avatar.dart';
 import '../widgets/primary_card.dart';
 import 'payment_screen.dart';
 
@@ -73,6 +74,10 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
   }
 
   String _profileValue(List<String> keys, String fallback) {
+    if (keys.any((key) => ['name', 'nama', 'nama_lengkap'].contains(key))) {
+      return SessionManager.getDisplayName();
+    }
+
     final user = SessionManager.user;
     if (user == null) return fallback;
 
@@ -107,6 +112,7 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                 const SizedBox(height: 12),
                 _InfoCard(
                   title: 'Jadwal Dokter',
+                  leading: DoctorAvatar(doctor: widget.doctor, radius: 28),
                   rows: {
                     'Dokter': widget.doctor.name,
                     'Poli': widget.doctor.polyclinic,
@@ -178,10 +184,11 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.title, required this.rows});
+  const _InfoCard({required this.title, required this.rows, this.leading});
 
   final String title;
   final Map<String, String> rows;
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -189,9 +196,19 @@ class _InfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          Row(
+            children: [
+              if (leading != null) ...[leading!, const SizedBox(width: 12)],
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           ...rows.entries.map(
