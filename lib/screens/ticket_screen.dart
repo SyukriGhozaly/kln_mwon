@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/utils/formatters.dart';
 import '../models/booking.dart';
 import '../theme/app_theme.dart';
 import '../widgets/primary_card.dart';
@@ -62,9 +63,18 @@ class TicketScreen extends StatelessWidget {
                     _TicketRow(label: 'Dokter', value: booking.doctor.name),
                     _TicketRow(
                       label: 'Jadwal',
-                      value: '${booking.date}, ${booking.time}',
+                      value:
+                          '${AppFormatters.bookingDate(booking.date)}, ${booking.time}',
                     ),
-                    _TicketRow(label: 'Status', value: 'Terjadwal'),
+                    _TicketRow(
+                      label: 'Pembayaran',
+                      value: AppFormatters.paymentMethod(booking.paymentMethod),
+                    ),
+                    _TicketRow(
+                      label: 'Total',
+                      value: AppFormatters.rupiah(booking.total),
+                    ),
+                    _TicketRow(label: 'Status', value: booking.status),
                   ],
                 ),
               ),
@@ -75,6 +85,16 @@ class TicketScreen extends StatelessWidget {
                   (_) => false,
                 ),
                 child: const Text('KEMBALI KE HOME'),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (_) => const MainShell(initialIndex: 3),
+                  ),
+                  (_) => false,
+                ),
+                child: const Text('LIHAT RIWAYAT'),
               ),
             ],
           ),

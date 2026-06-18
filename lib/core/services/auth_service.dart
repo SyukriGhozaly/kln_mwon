@@ -25,6 +25,7 @@ class AuthService {
       if (normalizedLogin.contains('@')) 'email': normalizedLogin,
       if (!normalizedLogin.contains('@')) 'username': normalizedLogin,
       'password': password,
+      'device_name': 'flutter_mobile',
     });
     final session = _sessionFromResponse(response);
     await saveSession(session);
@@ -46,6 +47,7 @@ class AuthService {
       'no_hp': phone,
       'password': password,
       'password_confirmation': passwordConfirmation,
+      'device_name': 'flutter_mobile',
     });
     final session = _sessionFromResponse(response);
     await saveSession(session);
@@ -54,7 +56,26 @@ class AuthService {
 
   Future<bool> hasSession() async {
     await SessionManager.load();
-    return SessionManager.hasSession;
+    if (!SessionManager.hasSession) return false;
+
+    try {
+      final response = await _apiService.get(ApiConfig.profilePath);
+      final user = _userFromResponse(response);
+      if (user.isNotEmpty) {
+        final token = SessionManager.token;
+        if (token != null && token.isNotEmpty) {
+          await SessionManager.save(newToken: token, newUser: user);
+        }
+      }
+      return true;
+    } on ApiException catch (error) {
+      if (error.statusCode == 401 || error.statusCode == 403) {
+        await SessionManager.clear();
+        return false;
+      }
+
+      return true;
+    }
   }
 
   Future<void> saveSession(AuthSession session) async {
@@ -121,5 +142,18 @@ class AuthService {
     }
 
     return dataUser;
+  }
+
+  Map<String, dynamic> _userFromResponse(dynamic response) {
+    if (response is! Map<String, dynamic>) return const {};
+
+    final payload = response['data'] is Map<String, dynamic>
+        ? response['data'] as Map<String, dynamic>
+        : response;
+
+    final user = _userFromPayload(payload);
+    return user.isEmpty
+        ? payload.map((key, value) => MapEntry(key.toString(), value))
+        : user;
   }
 }

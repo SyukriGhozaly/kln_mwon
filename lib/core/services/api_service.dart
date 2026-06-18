@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -28,6 +29,8 @@ class ApiService {
   }
 
   Future<Map<String, String>> _headers() async {
+    await SessionManager.load();
+
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -93,8 +96,12 @@ class ApiService {
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      if (_shouldClearSession(response.statusCode, uri)) {
+        unawaited(SessionManager.clear());
+      }
+
       final message = decoded is Map<String, dynamic>
-          ? decoded['message']?.toString() ?? decoded['error']?.toString()
+          ? _errorMessage(decoded)
           : null;
       throw ApiException(
         '${message ?? 'Request API gagal'} (HTTP ${response.statusCode})',
@@ -119,5 +126,38 @@ class ApiService {
       'Tidak bisa menghubungi API CI4 di $uri. Pastikan CI4 berjalan, route benar, dan CORS mengizinkan Flutter Web.',
       uri: uri,
     );
+  }
+
+  bool _shouldClearSession(int statusCode, Uri uri) {
+    if (statusCode != 401 && statusCode != 403) return false;
+    return !uri.path.endsWith(ApiConfig.loginPath) &&
+        !uri.path.endsWith(ApiConfig.registerPath);
+  }
+
+  String? _errorMessage(Map<String, dynamic> decoded) {
+    final baseMessage =
+        decoded['message']?.toString() ?? decoded['error']?.toString();
+    final errors = decoded['errors'];
+    final detail = _validationDetail(errors);
+
+    if (detail == null || detail.isEmpty) return baseMessage;
+    if (baseMessage == null || baseMessage.isEmpty) return detail;
+    return '$baseMessage\n$detail';
+  }
+
+  String? _validationDetail(Object? errors) {
+    if (errors is Map) {
+      return errors.entries
+          .map((entry) => entry.value?.toString() ?? '')
+          .where((message) => message.trim().isNotEmpty)
+          .join('\n');
+    }
+    if (errors is List) {
+      return errors
+          .map((message) => message.toString())
+          .where((message) => message.trim().isNotEmpty)
+          .join('\n');
+    }
+    return null;
   }
 }

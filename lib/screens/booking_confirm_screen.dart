@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/services/api_service.dart';
 import '../core/services/session_manager.dart';
+import '../core/utils/formatters.dart';
 import '../models/doctor.dart';
 import '../services/booking_service.dart';
 import '../theme/app_theme.dart';
@@ -33,6 +34,8 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
   final _bookingService = BookingService();
   String _paymentMethod = 'cash';
   bool _isSubmitting = false;
+
+  int get _total => widget.doctor.fee > 0 ? widget.doctor.fee : 50000;
 
   @override
   void dispose() {
@@ -68,9 +71,9 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   String _profileValue(List<String> keys, String fallback) {
@@ -116,7 +119,7 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                   rows: {
                     'Dokter': widget.doctor.name,
                     'Poli': widget.doctor.polyclinic,
-                    'Tanggal': widget.date,
+                    'Tanggal': AppFormatters.bookingDate(widget.date),
                     'Jam': widget.time,
                     'Lokasi': 'Klinik Mawon, Ruang Pemeriksaan 1',
                   },
@@ -159,6 +162,24 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                   ],
                   onChanged: (value) =>
                       setState(() => _paymentMethod = value ?? 'cash'),
+                ),
+                const SizedBox(height: 12),
+                PrimaryCard(
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.receipt_long_rounded,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Estimasi biaya: ${AppFormatters.rupiah(_total)}',
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 22),
                 ElevatedButton(

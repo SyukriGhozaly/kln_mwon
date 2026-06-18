@@ -1,6 +1,7 @@
 import '../core/constants/api_config.dart';
 import '../core/services/api_service.dart';
 import '../models/booking.dart';
+import 'local_data_service.dart';
 
 class PaymentService {
   PaymentService({ApiService? api}) : _api = api ?? ApiService();
@@ -10,21 +11,34 @@ class PaymentService {
   Future<Booking> confirmPayment(Booking booking) async {
     final bookingIdentifier = booking.id ?? booking.code;
     final total = _safeTotal(booking.total);
-    final response = await _api.post(ApiConfig.paymentsPath, {
+    final requestBody = {
       'booking_id': bookingIdentifier,
       'id_booking': bookingIdentifier,
+      'appointment_id': bookingIdentifier,
+      'id_appointment': bookingIdentifier,
       'booking_code': booking.code,
       'kode_booking': booking.code,
       'payment_method': booking.paymentMethod,
       'metode_pembayaran': booking.paymentMethod,
       'amount': total,
       'total': total,
-    });
+      'status': 'Terjadwal',
+    };
 
-    return _confirmedBooking(
-      booking.copyWith(total: total),
-      _extractObject(response),
-    );
+    try {
+      final response = await _api.post(ApiConfig.paymentsPath, requestBody);
+      final confirmed = _confirmedBooking(
+        booking.copyWith(total: total),
+        _extractObject(response),
+      );
+      await LocalDataService.upsertBooking(confirmed);
+      return confirmed;
+    } on ApiException catch (error) {
+      if (error.statusCode != null && error.statusCode != 404) rethrow;
+      final confirmed = _confirmedBooking(booking.copyWith(total: total), {});
+      await LocalDataService.upsertBooking(confirmed);
+      return confirmed;
+    }
   }
 
   Booking _confirmedBooking(Booking booking, Map<String, dynamic> source) {
@@ -32,7 +46,7 @@ class PaymentService {
       ...source,
       if (source.isEmpty) 'status': 'Terjadwal',
     }).copyWith(
-      id: booking.id,
+      id: _readId(source) ?? booking.id,
       code:
           source['code']?.toString() ??
           source['booking_code']?.toString() ??
@@ -70,6 +84,17 @@ class PaymentService {
   }
 
   int _safeTotal(int total) => total > 0 ? total : 50000;
+
+  int? _readId(Map<String, dynamic> source) {
+    for (final key in ['id', 'booking_id', 'id_booking', 'appointment_id']) {
+      final value = source[key];
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      final parsed = int.tryParse(value?.toString() ?? '');
+      if (parsed != null) return parsed;
+    }
+    return null;
+  }
 
   int? _readTotal(Map<String, dynamic> source) {
     for (final key in ['total', 'amount', 'biaya', 'fee']) {

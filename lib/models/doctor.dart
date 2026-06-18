@@ -35,6 +35,19 @@ class Doctor {
             'jam_praktik',
             'jadwal_praktik',
           ]);
+    final scheduleDates = _extractScheduleDates(scheduleText);
+    final rawDates = _readStringList(json, [
+      'available_dates',
+      'availableDates',
+      'tanggal_tersedia',
+      'dates',
+    ], fallback: scheduleDates);
+    final rawTimes = _readStringList(json, [
+      'available_times',
+      'availableTimes',
+      'jam_tersedia',
+      'times',
+    ], fallback: _extractTimeSlots(scheduleText));
 
     return Doctor(
       id: _readInt(json, ['id', 'doctor_id', 'id_dokter']),
@@ -63,18 +76,12 @@ class Doctor {
         'image_url',
         'imageUrl',
       ], fallback: ''),
-      availableDates: _readStringList(json, [
-        'available_dates',
-        'availableDates',
-        'tanggal_tersedia',
-        'dates',
-      ], fallback: _extractDates(json['schedule'])),
-      availableTimes: _readStringList(json, [
-        'available_times',
-        'availableTimes',
-        'jam_tersedia',
-        'times',
-      ], fallback: _extractTimes(scheduleText)),
+      availableDates: _normalizeDateList(
+        rawDates,
+        scheduleFallback: scheduleDates,
+        timeFallback: scheduleText.isNotEmpty,
+      ),
+      availableTimes: _normalizeTimes(rawTimes, scheduleText),
       fee: _readInt(json, ['fee', 'tarif', 'biaya', 'price'], fallback: 0),
     );
   }
@@ -170,30 +177,159 @@ class Doctor {
     return fallback;
   }
 
-  static List<String> _extractDates(Object? schedule) {
-    if (schedule is List) {
-      final dates = <String>[];
-      for (final item in schedule) {
-        if (item is Map) {
-          final normalized = _normalizeMap(item);
-          final date = _readString(normalized, [
-            'date',
-            'tanggal',
-            'day',
-            'hari',
-          ]);
-          if (date.isNotEmpty) dates.add(date);
-        }
-      }
-      return dates.toSet().toList();
+  static String _normalizeDate(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return '';
+
+    final lower = trimmed.toLowerCase();
+    if (lower == 'hari ini' || lower == 'today') return _dateFromNow(0);
+    if (lower == 'besok' || lower == 'tomorrow') return _dateFromNow(1);
+
+    final parsed = DateTime.tryParse(trimmed);
+    if (parsed != null) {
+      return '${parsed.year}-${_two(parsed.month)}-${_two(parsed.day)}';
     }
-    return const <String>[];
+
+    return trimmed;
   }
+
+  static List<String> _normalizeDateList(
+    List<String> rawDates, {
+    required List<String> scheduleFallback,
+    required bool timeFallback,
+  }) {
+    final normalized = rawDates
+        .map(_normalizeDate)
+        .where(_isIsoDate)
+        .toSet()
+        .toList();
+    final onlyTodayText =
+        rawDates.length == 1 &&
+        ['hari ini', 'today'].contains(rawDates.first.toLowerCase().trim());
+
+    if (normalized.isNotEmpty && (!onlyTodayText || scheduleFallback.isEmpty)) {
+      return normalized;
+    }
+    if (scheduleFallback.isNotEmpty) return scheduleFallback;
+    return timeFallback ? [_dateFromNow(0)] : const <String>[];
+  }
+
+  static bool _isIsoDate(String value) {
+    return RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value);
+  }
+
+  static String _dateFromNow(int days) {
+    final date = DateTime.now().add(Duration(days: days));
+    return '${date.year}-${_two(date.month)}-${_two(date.day)}';
+  }
+
+  static String _two(int value) => value.toString().padLeft(2, '0');
 
   static List<String> _extractTimes(String text) {
     final matches = RegExp(r'\d{1,2}[.:]\d{2}').allMatches(text).map((match) {
       return match.group(0)!.replaceAll('.', ':');
     }).toList();
     return matches;
+  }
+
+  static List<String> _extractTimeSlots(String text) {
+    return _normalizeTimes(_extractTimes(text), text);
+  }
+
+  static List<String> _normalizeTimes(List<String> rawTimes, String text) {
+    final times = rawTimes
+        .map(_normalizeTime)
+        .where((time) => time.isNotEmpty)
+        .toList();
+    if (times.length >= 2 && _looksLikeTimeRange(text)) {
+      return _hourlySlots(times.first, times[1]);
+    }
+    return times.toSet().toList();
+  }
+
+  static String _normalizeTime(String value) {
+    final match = RegExp(r'(\d{1,2})[.:](\d{2})').firstMatch(value);
+    if (match == null) return '';
+    final hour = int.tryParse(match.group(1) ?? '');
+    final minute = int.tryParse(match.group(2) ?? '');
+    if (hour == null || minute == null) return '';
+    return '${_two(hour)}:${_two(minute)}';
+  }
+
+  static bool _looksLikeTimeRange(String text) {
+    return text.contains('-') || text.toLowerCase().contains('sampai');
+  }
+
+  static List<String> _hourlySlots(String start, String end) {
+    final startParts = start.split(':').map(int.parse).toList();
+    final endParts = end.split(':').map(int.parse).toList();
+    final startMinutes = startParts[0] * 60 + startParts[1];
+    final endMinutes = endParts[0] * 60 + endParts[1];
+
+    if (endMinutes <= startMinutes) return [start, end];
+
+    final slots = <String>[];
+    for (var minutes = startMinutes; minutes <= endMinutes; minutes += 60) {
+      slots.add('${_two(minutes ~/ 60)}:${_two(minutes % 60)}');
+    }
+    return slots;
+  }
+
+  static List<String> _extractScheduleDates(String text) {
+    if (text.trim().isEmpty) return const <String>[];
+
+    final lower = text.toLowerCase();
+    final selectedDays = <int>{};
+    final dayNumbers = _dayNumbers();
+    final rangePattern = RegExp(
+      r"(senin|selasa|rabu|kamis|jumat|jum'at|sabtu|minggu)\s*-\s*(senin|selasa|rabu|kamis|jumat|jum'at|sabtu|minggu)",
+    );
+
+    for (final match in rangePattern.allMatches(lower)) {
+      final start = dayNumbers[match.group(1)];
+      final end = dayNumbers[match.group(2)];
+      if (start == null || end == null) continue;
+      selectedDays.addAll(_dayRange(start, end));
+    }
+
+    for (final entry in dayNumbers.entries) {
+      if (lower.contains(entry.key)) selectedDays.add(entry.value);
+    }
+
+    if (selectedDays.isEmpty) return const <String>[];
+
+    final today = DateTime.now();
+    final dates = <String>[];
+    for (var offset = 0; dates.length < 7 && offset < 21; offset++) {
+      final date = today.add(Duration(days: offset));
+      if (selectedDays.contains(date.weekday)) {
+        dates.add('${date.year}-${_two(date.month)}-${_two(date.day)}');
+      }
+    }
+    return dates;
+  }
+
+  static Map<String, int> _dayNumbers() {
+    return const {
+      'senin': DateTime.monday,
+      'selasa': DateTime.tuesday,
+      'rabu': DateTime.wednesday,
+      'kamis': DateTime.thursday,
+      'jumat': DateTime.friday,
+      "jum'at": DateTime.friday,
+      'sabtu': DateTime.saturday,
+      'minggu': DateTime.sunday,
+    };
+  }
+
+  static List<int> _dayRange(int start, int end) {
+    final days = <int>[];
+    var current = start;
+    while (true) {
+      days.add(current);
+      if (current == end) break;
+      current = current == DateTime.sunday ? DateTime.monday : current + 1;
+    }
+    return days;
   }
 }

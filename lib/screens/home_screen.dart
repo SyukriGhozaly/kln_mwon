@@ -140,12 +140,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Center(child: CircularProgressIndicator())
                   else if (snapshot.hasError)
                     _InlineState(
-                      message: 'Gagal memuat dokter dari API.',
+                      message:
+                          'Data dokter belum bisa dimuat. Periksa koneksi API atau coba lagi.',
                       onRetry: _reloadDoctors,
                     )
                   else if (doctors.isEmpty)
                     _InlineState(
-                      message: 'Belum ada dokter dari API.',
+                      message: 'Belum ada dokter yang tersedia saat ini.',
                       onRetry: _reloadDoctors,
                     )
                   else
@@ -168,28 +169,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 10),
                   const _SectionTitle(title: 'Jadwal Terdekat'),
                   const SizedBox(height: 12),
-                  if (doctors.isEmpty)
-                    const PrimaryCard(child: Text('Jadwal belum tersedia.'))
-                  else
-                    PrimaryCard(
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.schedule_rounded,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              '${doctors.first.name} - ${doctors.first.practiceTime}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  _NearestSchedule(
+                    doctors: doctors,
+                    isLoading:
+                        snapshot.connectionState == ConnectionState.waiting,
+                    onOpenDoctors: () => widget.onOpenTab(1),
+                  ),
                 ],
               ),
             );
@@ -214,8 +199,63 @@ class _InlineState extends StatelessWidget {
           const Icon(Icons.info_outline_rounded, color: AppColors.warning),
           const SizedBox(width: 10),
           Expanded(child: Text(message)),
-          TextButton(onPressed: onRetry, child: const Text('Retry')),
+          TextButton(onPressed: onRetry, child: const Text('Coba lagi')),
         ],
+      ),
+    );
+  }
+}
+
+class _NearestSchedule extends StatelessWidget {
+  const _NearestSchedule({
+    required this.doctors,
+    required this.isLoading,
+    required this.onOpenDoctors,
+  });
+
+  final List<Doctor> doctors;
+  final bool isLoading;
+  final VoidCallback onOpenDoctors;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const PrimaryCard(child: Text('Memuat jadwal terdekat...'));
+    }
+
+    if (doctors.isEmpty) {
+      return PrimaryCard(
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline_rounded, color: AppColors.warning),
+            const SizedBox(width: 10),
+            const Expanded(child: Text('Jadwal belum tersedia.')),
+            TextButton(onPressed: onOpenDoctors, child: const Text('Cek')),
+          ],
+        ),
+      );
+    }
+
+    final doctor = doctors.first;
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => DoctorDetailScreen(doctor: doctor)),
+      ),
+      child: PrimaryCard(
+        child: Row(
+          children: [
+            const Icon(Icons.schedule_rounded, color: AppColors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '${doctor.name} - ${doctor.practiceTime}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded),
+          ],
+        ),
       ),
     );
   }

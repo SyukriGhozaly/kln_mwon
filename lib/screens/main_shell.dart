@@ -16,7 +16,7 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  late int _index = widget.initialIndex;
+  late int _index = widget.initialIndex.clamp(0, 4);
 
   @override
   Widget build(BuildContext context) {

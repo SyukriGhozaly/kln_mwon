@@ -33,7 +33,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   String? _required(String? value) =>
-      value == null || value.isEmpty ? 'Field wajib diisi' : null;
+      value == null || value.trim().isEmpty ? 'Field wajib diisi' : null;
+
+  String? _passwordValidator(String? value) {
+    if (value == null || value.isEmpty) return 'Field wajib diisi';
+    if (value.length < 8) return 'Password minimal 8 karakter';
+    return null;
+  }
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
@@ -64,9 +70,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   @override
@@ -117,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       labelText: 'Password',
                       prefixIcon: Icon(Icons.lock_outline_rounded),
                     ),
-                    validator: _required,
+                    validator: _passwordValidator,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(

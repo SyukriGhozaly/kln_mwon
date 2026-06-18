@@ -54,9 +54,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  void _showForgotPasswordInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Lupa Password'),
+        content: const Text(
+          'Fitur reset password mobile belum tersedia. Silakan hubungi admin Klinik Mawon untuk reset akun.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -94,7 +112,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icon(Icons.mail_outline_rounded),
                           hintText: 'Masukkan email',
                         ),
-                        validator: (value) => value == null || value.isEmpty
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
                             ? 'Email wajib diisi'
                             : null,
                       ),
@@ -115,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () {},
+                          onPressed: _showForgotPasswordInfo,
                           child: const Text('Lupa password?'),
                         ),
                       ),

@@ -149,7 +149,10 @@ class Booking {
   static String _displayStatus(String status) {
     return switch (status.toLowerCase()) {
       'waiting' || 'pending' => 'Menunggu pembayaran',
+      'menunggu pembayaran' => 'Menunggu pembayaran',
+      'menunggu konfirmasi' => 'Menunggu konfirmasi',
       'confirmed' || 'paid' => 'Terjadwal',
+      'terjadwal' => 'Terjadwal',
       'done' || 'completed' || 'selesai' => 'Selesai',
       'cancelled' || 'canceled' || 'dibatalkan' => 'Dibatalkan',
       _ => status,

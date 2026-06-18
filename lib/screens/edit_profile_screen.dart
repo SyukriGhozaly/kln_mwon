@@ -44,7 +44,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   String? _required(String? value) =>
-      value == null || value.isEmpty ? 'Field wajib diisi' : null;
+      value == null || value.trim().isEmpty ? 'Field wajib diisi' : null;
+
+  String? _emailValidator(String? value) {
+    final required = _required(value);
+    if (required != null) return required;
+    final email = value!.trim();
+    final valid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+    return valid ? null : 'Format email tidak valid';
+  }
+
+  String? _phoneValidator(String? value) {
+    final required = _required(value);
+    if (required != null) return required;
+    final phone = value!.trim();
+    if (phone.length < 8) return 'No HP terlalu pendek';
+    return null;
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -58,12 +74,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
 
     try {
-      await _profileService.updateProfile(profile);
+      final updated = await _profileService.updateProfile(profile);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil berhasil disimpan.')),
+        const SnackBar(
+          content: Text('Profil berhasil disimpan.'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(updated);
     } on ApiException catch (error) {
       _showError(error.message);
     } catch (error) {
@@ -75,9 +94,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   ProfileData _profileFromSession() {
@@ -120,14 +139,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(labelText: 'Email'),
-                    validator: _required,
+                    validator: _emailValidator,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _phoneController,
+                    keyboardType: TextInputType.phone,
                     decoration: const InputDecoration(labelText: 'No HP'),
-                    validator: _required,
+                    validator: _phoneValidator,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(

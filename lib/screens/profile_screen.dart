@@ -43,11 +43,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _logout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Yakin ingin keluar dari akun Klinik Mawon?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+    if (shouldLogout != true) return;
+
     await AuthService().logout();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,
+    );
+  }
+
+  void _showInfo(String title, String message) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -121,28 +156,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           icon: Icons.edit_rounded,
                           title: 'Edit Profil',
                           onTap: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    EditProfileScreen(profile: _profile),
-                              ),
-                            );
+                            final updated = await Navigator.of(context)
+                                .push<ProfileData>(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        EditProfileScreen(profile: _profile),
+                                  ),
+                                );
                             if (!mounted) return;
-                            setState(() {
-                              _profile = ProfileData(
-                                name: SessionManager.getDisplayName(),
-                                email: _sessionValue(['email'], _profile.email),
-                                phone: _sessionValue([
-                                  'phone',
-                                  'no_hp',
-                                ], _profile.phone),
-                                address: _sessionValue([
-                                  'address',
-                                  'alamat',
-                                ], _profile.address),
-                              );
-                            });
+                            if (updated != null) {
+                              setState(() => _profile = updated);
+                            } else {
+                              _reload();
+                            }
                           },
+                        ),
+                        _ProfileInfo(
+                          icon: Icons.phone_outlined,
+                          label: 'No HP',
+                          value: _profile.phone,
+                        ),
+                        _ProfileInfo(
+                          icon: Icons.location_on_outlined,
+                          label: 'Alamat',
+                          value: _profile.address,
                         ),
                         _ProfileMenu(
                           icon: Icons.history_rounded,
@@ -156,12 +193,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _ProfileMenu(
                           icon: Icons.settings_rounded,
                           title: 'Pengaturan',
-                          onTap: () {},
+                          onTap: () => _showInfo(
+                            'Pengaturan',
+                            'Pengaturan aplikasi belum tersedia.',
+                          ),
                         ),
                         _ProfileMenu(
                           icon: Icons.help_outline_rounded,
                           title: 'Bantuan',
-                          onTap: () {},
+                          onTap: () => _showInfo(
+                            'Bantuan',
+                            'Hubungi 0857-0109-4305 jika ada kendala booking atau pembayaran. ',
+                          ),
                         ),
                         _ProfileMenu(
                           icon: Icons.info_outline_rounded,
@@ -213,6 +256,31 @@ class _ProfileState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ProfileInfo extends StatelessWidget {
+  const _ProfileInfo({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayValue = value.trim().isEmpty || value == '-'
+        ? 'Belum diisi'
+        : value;
+
+    return ListTile(
+      leading: Icon(icon, color: AppColors.primary),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(displayValue),
     );
   }
 }

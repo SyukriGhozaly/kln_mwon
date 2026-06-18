@@ -1,6 +1,7 @@
 import '../core/constants/api_config.dart';
 import '../core/services/api_service.dart';
 import '../models/doctor.dart';
+import 'local_data_service.dart';
 
 class DoctorService {
   DoctorService({ApiService? api}) : _api = api ?? ApiService();
@@ -8,9 +9,17 @@ class DoctorService {
   final ApiService _api;
 
   Future<List<Doctor>> getDoctors() async {
-    final response = await _api.get(ApiConfig.doctorsPath);
-    final list = _extractList(response);
-    return list.map((item) => Doctor.fromJson(_withPhotoUrl(item))).toList();
+    try {
+      final response = await _api.get(ApiConfig.doctorsPath);
+      final list = _extractList(response);
+      final doctors = list
+          .map((item) => Doctor.fromJson(_withPhotoUrl(item)))
+          .toList();
+      return doctors.isEmpty ? LocalDataService.doctors() : doctors;
+    } on ApiException catch (error) {
+      if (error.statusCode != null && error.statusCode != 404) rethrow;
+      return LocalDataService.doctors();
+    }
   }
 
   Map<String, dynamic> _withPhotoUrl(Map<String, dynamic> item) {
