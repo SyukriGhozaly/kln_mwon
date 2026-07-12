@@ -41,7 +41,11 @@ class LocalDataService {
     final current = await bookings();
     final index = current.indexWhere((item) {
       final sameId = booking.id != null && item.id == booking.id;
-      return sameId || item.code == booking.code;
+      final sameCode =
+          booking.code.trim().isNotEmpty &&
+          booking.code != '-' &&
+          item.code == booking.code;
+      return sameId || sameCode;
     });
 
     if (index == -1) {

@@ -71,7 +71,6 @@ class SessionManager {
     _loaded = true;
 
     final prefs = await SharedPreferences.getInstance();
-    await clearAccountCache();
     await prefs.setString(_tokenKey, newToken);
     await prefs.setString(_userKey, jsonEncode(user));
   }
@@ -93,6 +92,12 @@ class SessionManager {
       'address',
       'alamat',
       'role',
+      'photo',
+      'photo_url',
+      'profile_photo',
+      'avatar',
+      'image_url',
+      'foto',
     ]) {
       final value = source[key];
       if (value != null && value.toString().trim().isNotEmpty) {

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/constants/api_config.dart';
@@ -22,7 +23,14 @@ class ProfileData {
   final String? photoUrl;
 
   factory ProfileData.fromJson(Map<String, dynamic> json) {
-    final photo = _readString(json, ['photo_url', 'photo', 'profile_photo', 'image_url']);
+    final photo = _readString(json, [
+      'photo_url',
+      'photo',
+      'profile_photo',
+      'image_url',
+      'avatar',
+      'foto',
+    ]);
     return ProfileData(
       name: _readString(json, ['name', 'nama', 'nama_lengkap']),
       email: _readString(json, ['email']),
@@ -45,7 +53,10 @@ class ProfileData {
 
     if (includePhotoFields && photoUrl != null && photoUrl!.trim().isNotEmpty) {
       data['photo'] = photoUrl;
+      data['photo_url'] = photoUrl;
       data['profile_photo'] = photoUrl;
+      data['avatar'] = photoUrl;
+      data['image_url'] = photoUrl;
     }
 
     return data;
@@ -93,7 +104,17 @@ class ProfileService {
       final response = (photoBytes == null)
           ? await _api.put(ApiConfig.profilePath, profile.toJson())
           : await _uploadProfileWithFile(profile, photoBytes, photoFilename ?? 'upload.jpg');
-      final updated = ProfileData.fromJson(_extractObject(response));
+      debugPrint('===== PROFILE UPDATE RESPONSE =====' );
+      debugPrint('RAW RESPONSE: $response');
+      final extracted = _extractObject(response);
+      debugPrint('EXTRACTED DATA: $extracted');
+      debugPrint('photo field: ${extracted['photo']}');
+      debugPrint('photo_url field: ${extracted['photo_url']}');
+      debugPrint('profile_photo field: ${extracted['profile_photo']}');
+      debugPrint('image_url field: ${extracted['image_url']}');
+      debugPrint('====================================');
+      final updated = ProfileData.fromJson(extracted);
+      debugPrint('PROFILE PARSED: name=${updated.name}, photoUrl=${updated.photoUrl}');
       final value = updated.name.isEmpty ? profile : updated;
       await _saveUser(value);
       return value;
@@ -110,6 +131,8 @@ class ProfileService {
     String photoFilename,
   ) async {
     final uri = ApiConfig.apiUri(ApiConfig.profilePath);
+    debugPrint('===== UPLOADING PROFILE WITH FILE =====' );
+    debugPrint('URI: $uri');
     final request = http.MultipartRequest('POST', uri);
     final headers = await _api.requestHeaders();
     headers.remove('Content-Type');
@@ -118,6 +141,7 @@ class ProfileService {
     final fields = profile.toJson(includePhotoFields: false)
       .map((key, value) => MapEntry(key, value.toString()));
     request.fields.addAll(fields);
+    debugPrint('FIELDS: ${request.fields}');
     request.files.add(
       http.MultipartFile.fromBytes(
         'photo',
@@ -125,6 +149,10 @@ class ProfileService {
         filename: photoFilename,
       ),
     );
+    debugPrint('FILES ADDED: ${request.files.length} file(s)');
+    debugPrint('FILE NAME: ${request.files.first.filename}');
+    debugPrint('FILE SIZE: ${request.files.first.length} bytes');
+    debugPrint('=====================================');
 
     final streamed = await request.send().timeout(_api.timeout);
     final response = await http.Response.fromStream(streamed);
@@ -155,6 +183,12 @@ class ProfileService {
       'no_hp',
       'address',
       'alamat',
+      'photo',
+      'photo_url',
+      'profile_photo',
+      'avatar',
+      'image_url',
+      'foto',
     ].any((key) => normalized[key] != null);
 
     if (!hasProfileFields) {
@@ -169,10 +203,13 @@ class ProfileService {
     if (token == null || token.isEmpty) return;
     if (profile.name.isEmpty &&
         profile.email.isEmpty &&
-        profile.phone.isEmpty) {
+        profile.phone.isEmpty &&
+        (profile.photoUrl == null || profile.photoUrl!.isEmpty)) {
       return;
     }
     final mergedUser = _mergeNonEmpty(SessionManager.user, profile.toJson());
+    debugPrint('PROFILE SAVING TO SESSION: photoUrl=${profile.photoUrl}');
+    debugPrint('PROFILE MERGED USER: ${mergedUser['photo_url']} ${mergedUser['photo']}');
 
     await SessionManager.save(newToken: token, newUser: mergedUser);
   }

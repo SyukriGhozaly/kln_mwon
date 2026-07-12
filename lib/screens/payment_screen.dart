@@ -27,7 +27,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   String get _total => AppFormatters.rupiah(_safeTotal);
 
-  bool get _canConfirmOnline => widget.booking.id != null;
+  bool get _canConfirmPayment {
+    return widget.booking.id != null ||
+        (widget.booking.code.trim().isNotEmpty && widget.booking.code != '-');
+  }
 
   bool get _isCash => widget.booking.paymentMethod.toLowerCase() == 'cash';
 
@@ -38,10 +41,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       widget.booking.paymentMethod.toLowerCase() == 'transfer';
 
   Future<void> _confirmPayment() async {
-    if (!_canConfirmOnline) {
-      _showError(
-        'Booking belum tersimpan ke server. Pastikan koneksi API aktif lalu buat booking ulang.',
-      );
+    if (!_canConfirmPayment) {
+      _showError('Data booking belum lengkap. Silakan buat booking ulang.');
       return;
     }
 
@@ -83,8 +84,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   String get _paymentInstruction {
     return switch (widget.booking.paymentMethod.toLowerCase()) {
-      'cash' =>
-        'Pembayaran dilakukan di Klinik Mawon saat kunjungan.',
+      'cash' => 'Pembayaran dilakukan di Klinik Mawon saat kunjungan.',
       'transfer' || 'bank_transfer' =>
         'Transfer sesuai nominal tagihan ke rekening Klinik Mawon.',
       'qris' => 'Scan QRIS berikut untuk melakukan pembayaran.',
@@ -145,8 +145,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       _PaymentIcon(method: widget.booking.paymentMethod),
                     const SizedBox(height: 16),
                     if (_isBankTransfer) const _BankTransferInfo(),
-                    if (_isCash)
-                      const _CashInfo(),
+                    if (_isCash) const _CashInfo(),
                     if (_isBankTransfer || _isCash) const SizedBox(height: 12),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -163,7 +162,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
               const SizedBox(height: 22),
               ElevatedButton(
-                onPressed: _isSubmitting || !_canConfirmOnline
+                onPressed: _isSubmitting || !_canConfirmPayment
                     ? null
                     : _confirmPayment,
                 child: _isSubmitting
@@ -175,12 +174,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : Text(_isCash ? 'Lihat Tiket Booking' : 'Konfirmasi Pembayaran'),
+                    : Text(
+                        _isCash
+                            ? 'Lihat Tiket Booking'
+                            : 'Konfirmasi Pembayaran',
+                      ),
               ),
-              if (!_canConfirmOnline) ...[
+              if (!_canConfirmPayment) ...[
                 const SizedBox(height: 8),
                 const Text(
-                  'Booking ini masih lokal, belum bisa dikonfirmasi ke backend.',
+                  'Data booking belum lengkap untuk dikonfirmasi.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.danger),
                 ),
@@ -240,7 +243,7 @@ class _QrisImage extends StatelessWidget {
             child: const Center(child: CircularProgressIndicator()),
           );
         },
-        errorBuilder: (_, __, ___) => Container(
+        errorBuilder: (_, _, _) => Container(
           width: size,
           height: size,
           alignment: Alignment.center,
@@ -309,9 +312,17 @@ class _PaymentRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 104,
-            child: Text(label, style: const TextStyle(color: AppColors.textGrey)),
+            child: Text(
+              label,
+              style: const TextStyle(color: AppColors.textGrey),
+            ),
           ),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w800))),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
         ],
       ),
     );

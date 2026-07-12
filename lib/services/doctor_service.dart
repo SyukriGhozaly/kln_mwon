@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../core/constants/api_config.dart';
 import '../core/services/api_service.dart';
 import '../models/doctor.dart';
@@ -12,7 +14,12 @@ class DoctorService {
       final response = await _api.get(ApiConfig.doctorsPath);
       final list = _extractList(response);
       final doctors = list
-          .map((item) => Doctor.fromJson(_withPhotoUrl(item)))
+          .map((item) {
+            debugPrint('DOCTOR RAW: ${item['name']} - photo=${item['photo']}, image_url=${item['image_url']}, photo_url=${item['photo_url']}, foto=${item['foto']}');
+            final processed = _withPhotoUrl(item);
+            debugPrint('DOCTOR PROCESSED: ${processed['name']} - processed photo=${processed['photo']}');
+            return Doctor.fromJson(processed);
+          })
           .toList();
       return doctors;
     } on ApiException catch (error) {

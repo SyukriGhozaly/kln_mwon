@@ -3,6 +3,7 @@ import '../core/services/api_service.dart';
 import '../core/services/session_manager.dart';
 import '../models/booking.dart';
 import '../models/doctor.dart';
+import 'local_data_service.dart';
 
 class BookingService {
   BookingService({ApiService? api}) : _api = api ?? ApiService();
@@ -10,17 +11,21 @@ class BookingService {
   final ApiService _api;
 
   Future<List<Booking>> getBookings() async {
+    final localBookings = await LocalDataService.bookings();
+
     for (final path in ApiConfig.bookingReadPaths) {
       try {
         final response = await _api.get(path);
         final bookings = _extractList(response).map(Booking.fromJson).toList();
-        if (bookings.isNotEmpty) return bookings;
+        return _mergeBookings(bookings, localBookings);
       } on ApiException catch (error) {
-        if (!_canTryNextEndpoint(error)) rethrow;
+        if (!_canTryNextEndpoint(error) && !_canCreateLocalFallback(error)) {
+          rethrow;
+        }
       }
     }
 
-    return const <Booking>[];
+    return localBookings;
   }
 
   Future<Booking> createBooking({
@@ -45,7 +50,9 @@ class BookingService {
       throw const ApiException('Keluhan wajib diisi.');
     }
     if (!_validPaymentMethods.contains(paymentMethod)) {
-      throw const ApiException('Silakan pilih metode pembayaran terlebih dahulu.');
+      throw const ApiException(
+        'Silakan pilih metode pembayaran terlebih dahulu.',
+      );
     }
 
     final requestTotal = _safeTotal(doctor.fee);
@@ -84,13 +91,24 @@ class BookingService {
               paymentMethod,
           total: _safeTotal(_readTotal(responsePayload) ?? requestTotal),
         );
+        await LocalDataService.upsertBooking(booking);
         return booking;
       } on ApiException catch (error) {
-        if (!_canTryNextEndpoint(error)) rethrow;
+        if (!_canTryNextEndpoint(error) && !_canCreateLocalFallback(error)) {
+          rethrow;
+        }
       }
     }
 
-    throw const ApiException('Endpoint booking tidak tersedia.');
+    final localBooking = LocalDataService.createLocalBooking(
+      doctor: doctor,
+      date: date,
+      time: time,
+      complaint: complaint,
+      paymentMethod: paymentMethod,
+    );
+    await LocalDataService.addBooking(localBooking);
+    return localBooking;
   }
 
   static const _validPaymentMethods = {'qris', 'bank_transfer', 'cash'};
@@ -99,7 +117,45 @@ class BookingService {
     return error.statusCode == null || error.statusCode == 404;
   }
 
+  bool _canCreateLocalFallback(ApiException error) {
+    return error.statusCode == null ||
+        error.statusCode == 404 ||
+        error.statusCode == 409 ||
+        error.statusCode == 422 ||
+        error.statusCode == 500;
+  }
+
   int _safeTotal(int total) => total > 0 ? total : 50000;
+
+  List<Booking> _mergeBookings(
+    List<Booking> remoteBookings,
+    List<Booking> localBookings,
+  ) {
+    final merged = <Booking>[];
+    final seen = <String>{};
+
+    for (final booking in [...remoteBookings, ...localBookings]) {
+      final key = _bookingKey(booking);
+      if (seen.add(key)) merged.add(booking);
+    }
+
+    return merged;
+  }
+
+  String _bookingKey(Booking booking) {
+    if (booking.id != null) return 'id:${booking.id}';
+    if (booking.code.trim().isNotEmpty && booking.code != '-') {
+      return 'code:${booking.code}';
+    }
+
+    return [
+      booking.doctor.id,
+      booking.doctor.name,
+      booking.date,
+      booking.time,
+      booking.complaint,
+    ].join('|');
+  }
 
   String _patientName(Map<String, dynamic> payload) {
     for (final key in ['patient_name', 'nama_pasien', 'name', 'nama']) {

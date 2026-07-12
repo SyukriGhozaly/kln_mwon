@@ -1,6 +1,7 @@
 import '../core/constants/api_config.dart';
 import '../core/services/api_service.dart';
 import '../models/booking.dart';
+import 'local_data_service.dart';
 
 class PaymentService {
   PaymentService({ApiService? api}) : _api = api ?? ApiService();
@@ -24,18 +25,30 @@ class PaymentService {
       'status': 'Terjadwal',
     };
 
-    final response = await _api.post(ApiConfig.paymentsPath, requestBody);
-    return _confirmedBooking(
-      booking.copyWith(total: total),
-      _extractObject(response),
-    );
+    try {
+      final response = await _api.post(ApiConfig.paymentsPath, requestBody);
+      final confirmed = _confirmedBooking(
+        booking.copyWith(total: total),
+        _extractObject(response),
+      );
+      await LocalDataService.upsertBooking(confirmed);
+      return confirmed;
+    } on ApiException catch (error) {
+      if (!_canConfirmLocally(error)) rethrow;
+
+      final confirmed = booking.copyWith(total: total, status: 'Terjadwal');
+      await LocalDataService.upsertBooking(confirmed);
+      return confirmed;
+    }
   }
 
   Booking _confirmedBooking(Booking booking, Map<String, dynamic> source) {
-    return Booking.fromJson({
+    final parsed = Booking.fromJson({
       ...source,
       if (source.isEmpty) 'status': 'Terjadwal',
-    }).copyWith(
+    });
+
+    return parsed.copyWith(
       id: _readId(source) ?? booking.id,
       code:
           source['code']?.toString() ??
@@ -64,18 +77,25 @@ class PaymentService {
           source['complaint']?.toString() ??
           source['keluhan']?.toString() ??
           booking.complaint,
-      paymentMethod:
-          _normalizeMethod(
-            source['payment_method']?.toString() ??
-                source['metode_pembayaran']?.toString() ??
-                booking.paymentMethod,
-          ),
-      status: source['status']?.toString() ?? 'Terjadwal',
+      paymentMethod: _normalizeMethod(
+        source['payment_method']?.toString() ??
+            source['metode_pembayaran']?.toString() ??
+            booking.paymentMethod,
+      ),
+      status: parsed.status == '-' ? 'Terjadwal' : parsed.status,
       total: _safeTotal(_readTotal(source) ?? booking.total),
     );
   }
 
   int _safeTotal(int total) => total > 0 ? total : 50000;
+
+  bool _canConfirmLocally(ApiException error) {
+    return error.statusCode == null ||
+        error.statusCode == 404 ||
+        error.statusCode == 409 ||
+        error.statusCode == 422 ||
+        error.statusCode == 500;
+  }
 
   String _normalizeMethod(String method) {
     return method.toLowerCase() == 'transfer' ? 'bank_transfer' : method;

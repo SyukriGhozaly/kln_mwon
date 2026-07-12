@@ -24,6 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     email: _sessionValue(['email'], '-'),
     phone: _sessionValue(['phone', 'no_hp'], '-'),
     address: _sessionValue(['address', 'alamat'], '-'),
+    photoUrl: _sessionValue(['photo_url', 'photo', 'profile_photo', 'avatar', 'image_url', 'foto'], ''),
   );
 
   @override
@@ -40,6 +41,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _reload() {
     setState(() => _loadProfile = _fetchProfile());
+  }
+
+  static String _sessionValue(List<String> keys, String fallback) {
+    final user = SessionManager.user;
+    if (user == null) return fallback;
+
+    for (final key in keys) {
+      final value = user[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    return fallback;
   }
 
   Future<void> _logout() async {
@@ -86,19 +100,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  static String _sessionValue(List<String> keys, String fallback) {
-    final user = SessionManager.user;
-    if (user == null) return fallback;
-
-    for (final key in keys) {
-      final value = user[key];
-      if (value != null && value.toString().trim().isNotEmpty) {
-        return value.toString();
-      }
-    }
-    return fallback;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -129,96 +130,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   children: [
                     _ProfileAvatar(photoUrl: _profile.photoUrl),
-                  const SizedBox(height: 12),
-                  Text(
-                    _profile.name,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
+                    const SizedBox(height: 12),
+                    Text(
+                      _profile.name,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _profile.email,
-                    style: const TextStyle(color: AppColors.textGrey),
-                  ),
-                  const SizedBox(height: 20),
-                  PrimaryCard(
-                    padding: EdgeInsets.zero,
-                    child: Column(
-                      children: [
-                        _ProfileMenu(
-                          icon: Icons.edit_rounded,
-                          title: 'Edit Profil',
-                          onTap: () async {
-                            final updated = await Navigator.of(context)
-                                .push<ProfileData>(
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        EditProfileScreen(profile: _profile),
-                                  ),
-                                );
-                            if (!mounted) return;
-                            if (updated != null) {
-                              setState(() => _profile = updated);
-                            } else {
-                              _reload();
-                            }
-                          },
-                        ),
-                        _ProfileInfo(
-                          icon: Icons.phone_outlined,
-                          label: 'No HP',
-                          value: _profile.phone,
-                        ),
-                        _ProfileInfo(
-                          icon: Icons.location_on_outlined,
-                          label: 'Alamat',
-                          value: _profile.address,
-                        ),
-                        _ProfileMenu(
-                          icon: Icons.history_rounded,
-                          title: 'Riwayat',
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const HistoryScreen(),
+                    const SizedBox(height: 4),
+                    Text(
+                      _profile.email,
+                      style: const TextStyle(color: AppColors.textGrey),
+                    ),
+                    const SizedBox(height: 20),
+                    PrimaryCard(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        children: [
+                          _ProfileMenu(
+                            icon: Icons.edit_rounded,
+                            title: 'Edit Profil',
+                            onTap: () async {
+                              final updated = await Navigator.of(context)
+                                  .push<ProfileData>(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          EditProfileScreen(profile: _profile),
+                                    ),
+                                  );
+                              if (!mounted) return;
+                              if (updated != null) {
+                                setState(() => _profile = updated);
+                              } else {
+                                _reload();
+                              }
+                            },
+                          ),
+                          _ProfileInfo(
+                            icon: Icons.phone_outlined,
+                            label: 'No HP',
+                            value: _profile.phone,
+                          ),
+                          _ProfileInfo(
+                            icon: Icons.location_on_outlined,
+                            label: 'Alamat',
+                            value: _profile.address,
+                          ),
+                          _ProfileMenu(
+                            icon: Icons.history_rounded,
+                            title: 'Riwayat',
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const HistoryScreen(),
+                              ),
                             ),
                           ),
-                        ),
-                        _ProfileMenu(
-                          icon: Icons.settings_rounded,
-                          title: 'Pengaturan',
-                          onTap: () => _showInfo(
-                            'Pengaturan',
-                            'Pengaturan aplikasi belum tersedia.',
+                          _ProfileMenu(
+                            icon: Icons.settings_rounded,
+                            title: 'Pengaturan',
+                            onTap: () => _showInfo(
+                              'Pengaturan',
+                              'Pengaturan aplikasi belum tersedia.',
+                            ),
                           ),
-                        ),
-                        _ProfileMenu(
-                          icon: Icons.help_outline_rounded,
-                          title: 'Bantuan',
-                          onTap: () => _showInfo(
-                            'Bantuan',
-                            'Hubungi 0857-0109-4305 jika ada kendala booking atau pembayaran. ',
+                          _ProfileMenu(
+                            icon: Icons.help_outline_rounded,
+                            title: 'Bantuan',
+                            onTap: () => _showInfo(
+                              'Bantuan',
+                              'Hubungi 0857-0109-4305 jika ada kendala booking atau pembayaran. ',
+                            ),
                           ),
-                        ),
-                        _ProfileMenu(
-                          icon: Icons.info_outline_rounded,
-                          title: 'Tentang Aplikasi',
-                          onTap: () => showAboutDialog(
-                            context: context,
-                            applicationName: 'Klinik Mawon',
-                            applicationVersion: '0.1.0',
+                          _ProfileMenu(
+                            icon: Icons.info_outline_rounded,
+                            title: 'Tentang Aplikasi',
+                            onTap: () => showAboutDialog(
+                              context: context,
+                              applicationName: 'Klinik Mawon',
+                              applicationVersion: '0.1.0',
+                            ),
                           ),
-                        ),
-                        _ProfileMenu(
-                          icon: Icons.logout_rounded,
-                          title: 'Logout',
-                          danger: true,
-                          onTap: _logout,
-                        ),
-                      ],
+                          _ProfileMenu(
+                            icon: Icons.logout_rounded,
+                            title: 'Logout',
+                            danger: true,
+                            onTap: _logout,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   ],
                 ),
               ),
@@ -255,7 +256,7 @@ class _ProfileAvatar extends StatelessWidget {
                 if (progress == null) return child;
                 return const Center(child: CircularProgressIndicator());
               },
-              errorBuilder: (_, __, ___) => const Icon(
+              errorBuilder: (_, _, _) => const Icon(
                 Icons.person_rounded,
                 color: AppColors.primary,
                 size: 58,

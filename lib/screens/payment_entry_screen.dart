@@ -36,6 +36,12 @@ class _PaymentEntryScreenState extends State<PaymentEntryScreen> {
     setState(() => _loadPendingBookings = _pendingBookings());
   }
 
+  Future<void> _refresh() async {
+    final nextLoad = _pendingBookings();
+    setState(() => _loadPendingBookings = nextLoad);
+    await nextLoad;
+  }
+
   Future<void> _openPayment(Booking booking) async {
     await Navigator.of(
       context,
@@ -61,7 +67,7 @@ class _PaymentEntryScreenState extends State<PaymentEntryScreen> {
             final pendingBookings = snapshot.data ?? const <Booking>[];
 
             return RefreshIndicator(
-              onRefresh: () async => _reload(),
+              onRefresh: _refresh,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
