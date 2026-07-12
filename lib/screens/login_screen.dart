@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/services/api_service.dart';
@@ -45,7 +46,9 @@ class _LoginScreenState extends State<LoginScreen> {
       ).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
     } on ApiException catch (error) {
       _showError(error.message);
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('Login error tidak terduga: $error');
+      debugPrintStack(stackTrace: stackTrace);
       _showError('Tidak bisa terhubung ke server. Pastikan CI4 sedang jalan.');
     } finally {
       if (mounted) setState(() => _isLoading = false);

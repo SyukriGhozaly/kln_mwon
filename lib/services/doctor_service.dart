@@ -1,7 +1,6 @@
 import '../core/constants/api_config.dart';
 import '../core/services/api_service.dart';
 import '../models/doctor.dart';
-import 'local_data_service.dart';
 
 class DoctorService {
   DoctorService({ApiService? api}) : _api = api ?? ApiService();
@@ -15,10 +14,10 @@ class DoctorService {
       final doctors = list
           .map((item) => Doctor.fromJson(_withPhotoUrl(item)))
           .toList();
-      return doctors.isEmpty ? LocalDataService.doctors() : doctors;
+      return doctors;
     } on ApiException catch (error) {
       if (error.statusCode != null && error.statusCode != 404) rethrow;
-      return LocalDataService.doctors();
+      return const <Doctor>[];
     }
   }
 
@@ -39,16 +38,7 @@ class DoctorService {
   }
 
   String _resolvePhotoUrl(String photo) {
-    if (photo.startsWith('http://') || photo.startsWith('https://')) {
-      return photo;
-    }
-    if (photo.startsWith('/')) {
-      return '${ApiConfig.baseUrl}$photo';
-    }
-    if (photo.startsWith('img/')) {
-      return '${ApiConfig.baseUrl}/$photo';
-    }
-    return '${ApiConfig.baseUrl}/img/$photo';
+    return ApiConfig.publicFileUrl(photo);
   }
 
   List<Map<String, dynamic>> _extractList(dynamic response) {

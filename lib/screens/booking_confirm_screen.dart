@@ -29,10 +29,10 @@ class BookingConfirmScreen extends StatefulWidget {
 class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
   final _formKey = GlobalKey<FormState>();
   final _complaintController = TextEditingController(
-    text: 'Konsultasi kesehatan',
+    text: '',
   );
   final _bookingService = BookingService();
-  String _paymentMethod = 'cash';
+  String? _paymentMethod;
   bool _isSubmitting = false;
 
   int get _total => widget.doctor.fee > 0 ? widget.doctor.fee : 50000;
@@ -45,6 +45,10 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
 
   Future<void> _goToPayment() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_paymentMethod == null) {
+      _showError('Silakan pilih metode pembayaran terlebih dahulu.');
+      return;
+    }
 
     setState(() => _isSubmitting = true);
     try {
@@ -53,7 +57,7 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
         date: widget.date,
         time: widget.time,
         complaint: _complaintController.text.trim(),
-        paymentMethod: _paymentMethod,
+        paymentMethod: _paymentMethod!,
       );
 
       if (!mounted) return;
@@ -149,19 +153,22 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _paymentMethod,
+                  hint: const Text('Pilih metode pembayaran'),
                   items: const [
+                    DropdownMenuItem(value: 'qris', child: Text('QRIS')),
+                    DropdownMenuItem(
+                      value: 'bank_transfer',
+                      child: Text('Transfer Bank'),
+                    ),
                     DropdownMenuItem(
                       value: 'cash',
                       child: Text('Bayar di Tempat'),
                     ),
-                    DropdownMenuItem(value: 'qris', child: Text('QRIS')),
-                    DropdownMenuItem(
-                      value: 'transfer',
-                      child: Text('Transfer Bank'),
-                    ),
                   ],
-                  onChanged: (value) =>
-                      setState(() => _paymentMethod = value ?? 'cash'),
+                  validator: (value) => value == null
+                      ? 'Silakan pilih metode pembayaran terlebih dahulu.'
+                      : null,
+                  onChanged: (value) => setState(() => _paymentMethod = value),
                 ),
                 const SizedBox(height: 12),
                 PrimaryCard(
@@ -193,7 +200,7 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('PAYMENT'),
+                      : const Text('Konfirmasi Booking'),
                 ),
               ],
             ),

@@ -1,6 +1,7 @@
 import '../constants/api_config.dart';
 import 'api_service.dart';
 import 'session_manager.dart';
+import '../../services/profile_service.dart';
 
 class AuthSession {
   const AuthSession({required this.token, required this.user});
@@ -19,16 +20,16 @@ class AuthService {
     required String login,
     required String password,
   }) async {
+    await SessionManager.clear();
     final normalizedLogin = login.trim();
     final response = await _apiService.post(ApiConfig.loginPath, {
       'login': normalizedLogin,
-      if (normalizedLogin.contains('@')) 'email': normalizedLogin,
-      if (!normalizedLogin.contains('@')) 'username': normalizedLogin,
       'password': password,
       'device_name': 'flutter_mobile',
     });
     final session = _sessionFromResponse(response);
     await saveSession(session);
+    await _refreshProfile();
     return session;
   }
 
@@ -39,6 +40,7 @@ class AuthService {
     required String password,
     required String passwordConfirmation,
   }) async {
+    await SessionManager.clear();
     final response = await _apiService.post(ApiConfig.registerPath, {
       'name': name,
       'nama': name,
@@ -51,6 +53,7 @@ class AuthService {
     });
     final session = _sessionFromResponse(response);
     await saveSession(session);
+    await _refreshProfile();
     return session;
   }
 
@@ -80,6 +83,14 @@ class AuthService {
 
   Future<void> saveSession(AuthSession session) async {
     await SessionManager.save(newToken: session.token, newUser: session.user);
+  }
+
+  Future<void> _refreshProfile() async {
+    try {
+      await ProfileService(api: _apiService).getProfile();
+    } on ApiException {
+      // Login/register remains valid even if profile refresh is temporarily unavailable.
+    }
   }
 
   Future<void> logout() async {

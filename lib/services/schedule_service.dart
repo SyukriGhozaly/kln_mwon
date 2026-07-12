@@ -1,6 +1,5 @@
 import '../core/constants/api_config.dart';
 import '../core/services/api_service.dart';
-import 'local_data_service.dart';
 
 class ScheduleService {
   ScheduleService({ApiService? api}) : _api = api ?? ApiService();
@@ -33,9 +32,7 @@ class ScheduleService {
           return doctorId == null || id == null || id == doctorId;
         })
         .toList();
-    if (schedules.isNotEmpty) return schedules;
-
-    return _localSchedules(doctorId);
+    return schedules;
   }
 
   Future<dynamic> _getScheduleResponse(String path) async {
@@ -45,26 +42,6 @@ class ScheduleService {
       if (error.statusCode != null && error.statusCode != 404) rethrow;
       return const <dynamic>[];
     }
-  }
-
-  List<Map<String, dynamic>> _localSchedules(int? doctorId) {
-    return LocalDataService.doctors()
-        .where((doctor) => doctorId == null || doctor.id == doctorId)
-        .expand((doctor) {
-          return doctor.availableDates.expand((date) {
-            return doctor.availableTimes.map((time) {
-              return {
-                'doctor_id': doctor.id,
-                'id_dokter': doctor.id,
-                'date': date,
-                'tanggal': date,
-                'time': time,
-                'jam': time,
-              };
-            });
-          });
-        })
-        .toList();
   }
 
   Iterable<Map<String, dynamic>> _expandSchedule(Map<String, dynamic> source) {

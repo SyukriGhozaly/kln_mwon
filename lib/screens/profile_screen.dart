@@ -121,19 +121,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             }
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  const CircleAvatar(
-                    radius: 48,
-                    backgroundColor: AppColors.lightBlue,
-                    child: Icon(
-                      Icons.person_rounded,
-                      color: AppColors.primary,
-                      size: 58,
-                    ),
-                  ),
+            return RefreshIndicator(
+              onRefresh: _fetchProfile,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                child: Column(
+                  children: [
+                    _ProfileAvatar(photoUrl: _profile.photoUrl),
                   const SizedBox(height: 12),
                   Text(
                     _profile.name,
@@ -224,12 +219,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
             );
           },
         ),
       ),
+    );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({required this.photoUrl});
+
+  final String? photoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = photoUrl?.trim() ?? '';
+    return Container(
+      width: 96,
+      height: 96,
+      clipBehavior: Clip.antiAlias,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.lightBlue,
+      ),
+      child: url.isEmpty
+          ? const Icon(Icons.person_rounded, color: AppColors.primary, size: 58)
+          : Image.network(
+              url,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, progress) {
+                if (progress == null) return child;
+                return const Center(child: CircularProgressIndicator());
+              },
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.person_rounded,
+                color: AppColors.primary,
+                size: 58,
+              ),
+            ),
     );
   }
 }

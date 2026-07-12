@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../core/services/api_service.dart';
 import '../core/services/session_manager.dart';
@@ -22,6 +25,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
   final _profileService = ProfileService();
+  final _picker = ImagePicker();
+  Uint8List? _photoBytes;
+  String? _photoFilename;
+  String? _photoUrl;
   bool _isSaving = false;
 
   @override
@@ -32,6 +39,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _emailController = TextEditingController(text: profile.email);
     _phoneController = TextEditingController(text: profile.phone);
     _addressController = TextEditingController(text: profile.address);
+    _photoUrl = profile.photoUrl;
   }
 
   @override
@@ -71,10 +79,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       email: _emailController.text.trim(),
       phone: _phoneController.text.trim(),
       address: _addressController.text.trim(),
+      photoUrl: _photoBytes != null ? null : _photoUrl,
     );
 
     try {
-      final updated = await _profileService.updateProfile(profile);
+      final updated = await _profileService.updateProfile(
+        profile,
+        photoBytes: _photoBytes,
+        photoFilename: _photoFilename,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -109,6 +122,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
   }
 
+  Future<void> _pickPhoto() async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
+    final bytes = await picked.readAsBytes();
+    setState(() {
+      _photoBytes = bytes;
+      _photoFilename = picked.name;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,14 +150,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               key: _formKey,
               child: Column(
                 children: [
-                  const CircleAvatar(
-                    radius: 44,
-                    backgroundColor: AppColors.lightBlue,
-                    child: Icon(
-                      Icons.person_rounded,
-                      color: AppColors.primary,
-                      size: 52,
+                  GestureDetector(
+                    onTap: _pickPhoto,
+                    child: CircleAvatar(
+                      radius: 44,
+                      backgroundColor: AppColors.lightBlue,
+                        foregroundImage: _photoBytes != null
+                          ? MemoryImage(_photoBytes!) as ImageProvider
+                          : (_photoUrl != null && _photoUrl!.trim().isNotEmpty)
+                            ? NetworkImage(_photoUrl!)
+                            : null,
+                        child: _photoBytes == null && (_photoUrl == null || _photoUrl!.trim().isEmpty)
+                          ? const Icon(
+                              Icons.person_rounded,
+                              color: AppColors.primary,
+                              size: 52,
+                            )
+                          : null,
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: _pickPhoto,
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: const Text('Pilih Foto Profil'),
                   ),
                   const SizedBox(height: 18),
                   TextFormField(

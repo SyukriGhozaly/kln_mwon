@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../constants/api_config.dart';
@@ -24,8 +25,7 @@ class ApiService {
   static const _timeout = Duration(seconds: 5);
 
   Uri _uri(String path) {
-    final normalizedPath = path.startsWith('/') ? path : '/$path';
-    return Uri.parse(ApiConfig.apiBaseUrl + normalizedPath);
+    return ApiConfig.apiUri(path);
   }
 
   Future<Map<String, String>> _headers() async {
@@ -39,9 +39,16 @@ class ApiService {
     };
   }
 
+  Future<Map<String, String>> requestHeaders() => _headers();
+
+  Duration get timeout => _timeout;
+
+  dynamic decodeResponse(http.Response response, Uri uri) => _decode(response, uri);
+
   Future<dynamic> get(String path) async {
     final uri = _uri(path);
     try {
+      _debugRequest('GET', uri);
       final response = await _client
           .get(uri, headers: await _headers())
           .timeout(_timeout);
@@ -49,6 +56,7 @@ class ApiService {
     } on ApiException {
       rethrow;
     } catch (error) {
+      _debugRequestError('GET', uri, error);
       throw _connectionException(uri, error);
     }
   }
@@ -56,6 +64,7 @@ class ApiService {
   Future<dynamic> post(String path, Map<String, dynamic> body) async {
     final uri = _uri(path);
     try {
+      _debugRequest('POST', uri, body);
       final response = await _client
           .post(uri, headers: await _headers(), body: jsonEncode(body))
           .timeout(_timeout);
@@ -63,6 +72,7 @@ class ApiService {
     } on ApiException {
       rethrow;
     } catch (error) {
+      _debugRequestError('POST', uri, error);
       throw _connectionException(uri, error);
     }
   }
@@ -70,6 +80,7 @@ class ApiService {
   Future<dynamic> put(String path, Map<String, dynamic> body) async {
     final uri = _uri(path);
     try {
+      _debugRequest('PUT', uri, body);
       final response = await _client
           .put(uri, headers: await _headers(), body: jsonEncode(body))
           .timeout(_timeout);
@@ -77,12 +88,15 @@ class ApiService {
     } on ApiException {
       rethrow;
     } catch (error) {
+      _debugRequestError('PUT', uri, error);
       throw _connectionException(uri, error);
     }
   }
 
   dynamic _decode(http.Response response, Uri uri) {
     final body = response.body.trim();
+    debugPrint('API RESPONSE ${response.statusCode} $uri');
+    debugPrint(body.isEmpty ? '<empty body>' : body);
     final dynamic decoded;
 
     try {
@@ -123,9 +137,18 @@ class ApiService {
 
   ApiException _connectionException(Uri uri, Object error) {
     return ApiException(
-      'Tidak bisa menghubungi API CI4 di $uri. Pastikan CI4 berjalan, route benar, dan CORS mengizinkan Flutter Web.',
+      'Tidak bisa menghubungi API CI4 di $uri. Detail: $error',
       uri: uri,
     );
+  }
+
+  void _debugRequestError(String method, Uri uri, Object error) {
+    debugPrint('API $method $uri gagal: $error');
+  }
+
+  void _debugRequest(String method, Uri uri, [Map<String, dynamic>? body]) {
+    debugPrint('API REQUEST $method $uri');
+    if (body != null) debugPrint('API BODY ${jsonEncode(body)}');
   }
 
   bool _shouldClearSession(int statusCode, Uri uri) {

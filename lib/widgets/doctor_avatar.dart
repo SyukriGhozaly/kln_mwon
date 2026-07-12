@@ -39,12 +39,7 @@ class DoctorAvatar extends StatelessWidget {
   String? get photoUrl {
     final photo = doctor.imageUrl.trim();
     if (photo.isEmpty) return null;
-    if (photo.startsWith('http://') || photo.startsWith('https://')) {
-      return photo;
-    }
-    if (photo.startsWith('/')) return '${ApiConfig.baseUrl}$photo';
-    if (photo.startsWith('img/')) return '${ApiConfig.baseUrl}/$photo';
-    return '${ApiConfig.baseUrl}/img/$photo';
+    return ApiConfig.publicFileUrl(photo);
   }
 }
 

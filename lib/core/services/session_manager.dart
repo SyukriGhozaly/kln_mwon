@@ -7,6 +7,20 @@ class SessionManager {
 
   static const _tokenKey = 'auth_token';
   static const _userKey = 'auth_user';
+  static const _accountCacheKeys = [
+    'profile',
+    'user',
+    'user_id',
+    'pasien_id',
+    'booking',
+    'active_booking',
+    'history',
+    'payment',
+    'selected_doctor',
+    'selected_schedule',
+    'payment_method',
+    'local_bookings',
+  ];
 
   static String? token;
   static Map<String, dynamic>? user;
@@ -57,6 +71,7 @@ class SessionManager {
     _loaded = true;
 
     final prefs = await SharedPreferences.getInstance();
+    await clearAccountCache();
     await prefs.setString(_tokenKey, newToken);
     await prefs.setString(_userKey, jsonEncode(user));
   }
@@ -95,5 +110,13 @@ class SessionManager {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
+    await clearAccountCache();
+  }
+
+  static Future<void> clearAccountCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in _accountCacheKeys) {
+      await prefs.remove(key);
+    }
   }
 }

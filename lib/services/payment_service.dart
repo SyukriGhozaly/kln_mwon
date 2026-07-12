@@ -1,7 +1,6 @@
 import '../core/constants/api_config.dart';
 import '../core/services/api_service.dart';
 import '../models/booking.dart';
-import 'local_data_service.dart';
 
 class PaymentService {
   PaymentService({ApiService? api}) : _api = api ?? ApiService();
@@ -18,27 +17,18 @@ class PaymentService {
       'id_appointment': bookingIdentifier,
       'booking_code': booking.code,
       'kode_booking': booking.code,
-      'payment_method': booking.paymentMethod,
-      'metode_pembayaran': booking.paymentMethod,
+      'payment_method': _normalizeMethod(booking.paymentMethod),
+      'metode_pembayaran': _normalizeMethod(booking.paymentMethod),
       'amount': total,
       'total': total,
       'status': 'Terjadwal',
     };
 
-    try {
-      final response = await _api.post(ApiConfig.paymentsPath, requestBody);
-      final confirmed = _confirmedBooking(
-        booking.copyWith(total: total),
-        _extractObject(response),
-      );
-      await LocalDataService.upsertBooking(confirmed);
-      return confirmed;
-    } on ApiException catch (error) {
-      if (error.statusCode != null && error.statusCode != 404) rethrow;
-      final confirmed = _confirmedBooking(booking.copyWith(total: total), {});
-      await LocalDataService.upsertBooking(confirmed);
-      return confirmed;
-    }
+    final response = await _api.post(ApiConfig.paymentsPath, requestBody);
+    return _confirmedBooking(
+      booking.copyWith(total: total),
+      _extractObject(response),
+    );
   }
 
   Booking _confirmedBooking(Booking booking, Map<String, dynamic> source) {
@@ -75,15 +65,21 @@ class PaymentService {
           source['keluhan']?.toString() ??
           booking.complaint,
       paymentMethod:
-          source['payment_method']?.toString() ??
-          source['metode_pembayaran']?.toString() ??
-          booking.paymentMethod,
+          _normalizeMethod(
+            source['payment_method']?.toString() ??
+                source['metode_pembayaran']?.toString() ??
+                booking.paymentMethod,
+          ),
       status: source['status']?.toString() ?? 'Terjadwal',
       total: _safeTotal(_readTotal(source) ?? booking.total),
     );
   }
 
   int _safeTotal(int total) => total > 0 ? total : 50000;
+
+  String _normalizeMethod(String method) {
+    return method.toLowerCase() == 'transfer' ? 'bank_transfer' : method;
+  }
 
   int? _readId(Map<String, dynamic> source) {
     for (final key in ['id', 'booking_id', 'id_booking', 'appointment_id']) {

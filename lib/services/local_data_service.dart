@@ -12,56 +12,7 @@ class LocalDataService {
   static const _bookingsKey = 'local_bookings';
 
   static List<Doctor> doctors() {
-    final dates = _upcomingDates();
-    return [
-      Doctor(
-        id: 1,
-        name: 'dr. Ayu Lestari',
-        specialty: 'Dokter Umum',
-        polyclinic: 'Poli Umum',
-        phone: '081234567801',
-        email: 'ayu@klinikmawon.test',
-        practiceTime: 'Senin - Jumat, 08:00-12:00',
-        imageUrl: '',
-        availableDates: dates.take(3).toList(),
-        availableTimes: const ['08:00', '09:30', '11:00'],
-        fee: 50000,
-      ),
-      Doctor(
-        id: 2,
-        name: 'drg. Bima Pratama',
-        specialty: 'Dokter Gigi',
-        polyclinic: 'Poli Gigi',
-        phone: '081234567802',
-        email: 'bima@klinikmawon.test',
-        practiceTime: 'Selasa - Sabtu, 10:00-14:00',
-        imageUrl: '',
-        availableDates: [dates[1], dates[3], dates[5]],
-        availableTimes: const ['10:00', '12:00', '13:30'],
-        fee: 75000,
-      ),
-      Doctor(
-        id: 3,
-        name: 'dr. Citra Maharani',
-        specialty: 'Spesialis Anak',
-        polyclinic: 'Poli Anak',
-        phone: '081234567803',
-        email: 'citra@klinikmawon.test',
-        practiceTime: 'Senin, Rabu, Jumat, 15:00-18:00',
-        imageUrl: '',
-        availableDates: [dates[2], dates[4], dates[6]],
-        availableTimes: const ['15:00', '16:30', '17:30'],
-        fee: 100000,
-      ),
-    ];
-  }
-
-  static List<String> _upcomingDates() {
-    final today = DateTime.now();
-    return List.generate(7, (index) {
-      final date = today.add(Duration(days: index));
-      return '${date.year}-${_two(date.month)}-${_two(date.day)}';
-    });
+    return const <Doctor>[];
   }
 
   static Future<List<Booking>> bookings() async {

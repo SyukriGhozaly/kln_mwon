@@ -30,7 +30,7 @@ class AppFormatters {
     return switch (value.toLowerCase()) {
       'cash' => 'Bayar di Tempat',
       'qris' => 'QRIS',
-      'transfer' => 'Transfer Bank',
+      'transfer' || 'bank_transfer' => 'Transfer Bank',
       _ => value.isEmpty || value == '-' ? 'Belum dipilih' : value,
     };
   }

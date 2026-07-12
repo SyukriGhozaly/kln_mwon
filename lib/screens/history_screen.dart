@@ -67,7 +67,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             final bookings = snapshot.data ?? const <Booking>[];
             if (bookings.isEmpty) {
               return _StateMessage(
-                message: 'Belum ada riwayat booking dari API.',
+                message: 'Belum ada riwayat kunjungan.',
                 actionText: 'Muat ulang',
                 onAction: _reload,
               );

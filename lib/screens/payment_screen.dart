@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../core/constants/api_config.dart';
 import '../core/services/api_service.dart';
 import '../core/utils/formatters.dart';
 import '../models/booking.dart';
@@ -26,6 +28,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String get _total => AppFormatters.rupiah(_safeTotal);
 
   bool get _canConfirmOnline => widget.booking.id != null;
+
+  bool get _isCash => widget.booking.paymentMethod.toLowerCase() == 'cash';
+
+  bool get _isQris => widget.booking.paymentMethod.toLowerCase() == 'qris';
+
+  bool get _isBankTransfer =>
+      widget.booking.paymentMethod.toLowerCase() == 'bank_transfer' ||
+      widget.booking.paymentMethod.toLowerCase() == 'transfer';
 
   Future<void> _confirmPayment() async {
     if (!_canConfirmOnline) {
@@ -65,7 +75,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String get _paymentTitle {
     return switch (widget.booking.paymentMethod.toLowerCase()) {
       'cash' => 'Bayar di Tempat',
-      'transfer' => 'Transfer Bank',
+      'transfer' || 'bank_transfer' => 'Transfer Bank',
       'qris' => 'Scan QRIS',
       _ => AppFormatters.paymentMethod(widget.booking.paymentMethod),
     };
@@ -74,10 +84,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String get _paymentInstruction {
     return switch (widget.booking.paymentMethod.toLowerCase()) {
       'cash' =>
-        'Datang sesuai jadwal, lalu konfirmasi untuk mendapatkan nomor antrian.',
-      'transfer' =>
-        'Transfer sesuai nominal tagihan, lalu tekan konfirmasi pembayaran.',
-      'qris' => 'Scan QRIS sesuai nominal tagihan, lalu tekan konfirmasi.',
+        'Pembayaran dilakukan di Klinik Mawon saat kunjungan.',
+      'transfer' || 'bank_transfer' =>
+        'Transfer sesuai nominal tagihan ke rekening Klinik Mawon.',
+      'qris' => 'Scan QRIS berikut untuk melakukan pembayaran.',
       _ => 'Tekan konfirmasi untuk melanjutkan proses pembayaran.',
     };
   }
@@ -129,11 +139,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    if (widget.booking.paymentMethod.toLowerCase() == 'qris')
-                      const _FakeQr(size: 180)
+                    if (_isQris)
+                      _QrisImage(size: 190)
                     else
                       _PaymentIcon(method: widget.booking.paymentMethod),
                     const SizedBox(height: 16),
+                    if (_isBankTransfer) const _BankTransferInfo(),
+                    if (_isCash)
+                      const _CashInfo(),
+                    if (_isBankTransfer || _isCash) const SizedBox(height: 12),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.account_balance_wallet_rounded),
@@ -161,7 +175,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('KONFIRMASI PEMBAYARAN'),
+                    : Text(_isCash ? 'Lihat Tiket Booking' : 'Konfirmasi Pembayaran'),
               ),
               if (!_canConfirmOnline) ...[
                 const SizedBox(height: 8),
@@ -188,7 +202,7 @@ class _PaymentIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final icon = switch (method.toLowerCase()) {
       'cash' => Icons.payments_rounded,
-      'transfer' => Icons.account_balance_rounded,
+      'transfer' || 'bank_transfer' => Icons.account_balance_rounded,
       _ => Icons.account_balance_wallet_rounded,
     };
 
@@ -204,35 +218,101 @@ class _PaymentIcon extends StatelessWidget {
   }
 }
 
-class _FakeQr extends StatelessWidget {
-  const _FakeQr({required this.size});
+class _QrisImage extends StatelessWidget {
+  const _QrisImage({required this.size});
 
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.primary, width: 2),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: GridView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 9,
-        ),
-        itemCount: 81,
-        itemBuilder: (_, index) {
-          final dark =
-              index % 2 == 0 || index % 7 == 0 || index == 10 || index == 70;
-          return Container(
-            margin: const EdgeInsets.all(1.5),
-            color: dark ? AppColors.textDark : Colors.white,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.network(
+        ApiConfig.publicFileUrl('img/qr.png'),
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return SizedBox(
+            width: size,
+            height: size,
+            child: const Center(child: CircularProgressIndicator()),
           );
         },
+        errorBuilder: (_, __, ___) => Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          color: AppColors.lightBlue,
+          child: const Text('QRIS belum tersedia', textAlign: TextAlign.center),
+        ),
+      ),
+    );
+  }
+}
+
+class _BankTransferInfo extends StatelessWidget {
+  const _BankTransferInfo();
+
+  static const accountNumber = '1234567890';
+
+  @override
+  Widget build(BuildContext context) {
+    return PrimaryCard(
+      child: Column(
+        children: [
+          const _PaymentRow(label: 'Bank', value: 'BCA'),
+          const _PaymentRow(label: 'No Rekening', value: accountNumber),
+          const _PaymentRow(label: 'Atas Nama', value: 'Klinik Mawon'),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () {
+                Clipboard.setData(const ClipboardData(text: accountNumber));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nomor rekening disalin.')),
+                );
+              },
+              icon: const Icon(Icons.copy_rounded),
+              label: const Text('Salin'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CashInfo extends StatelessWidget {
+  const _CashInfo();
+
+  @override
+  Widget build(BuildContext context) {
+    return const PrimaryCard(
+      child: Text('Pembayaran dilakukan di Klinik Mawon saat kunjungan.'),
+    );
+  }
+}
+
+class _PaymentRow extends StatelessWidget {
+  const _PaymentRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 104,
+            child: Text(label, style: const TextStyle(color: AppColors.textGrey)),
+          ),
+          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w800))),
+        ],
       ),
     );
   }
