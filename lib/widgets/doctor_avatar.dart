@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../core/constants/api_config.dart';
 import '../models/doctor.dart';
 import '../theme/app_theme.dart';
 
@@ -37,9 +36,9 @@ class DoctorAvatar extends StatelessWidget {
   }
 
   String? get photoUrl {
-    final photo = doctor.imageUrl.trim();
+    final photo = doctor.photoUrl.trim();
     if (photo.isEmpty) return null;
-    return ApiConfig.publicFileUrl(photo);
+    return photo;
   }
 }
 

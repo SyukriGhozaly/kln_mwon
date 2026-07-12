@@ -23,11 +23,11 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
   @override
   void initState() {
     super.initState();
-    _loadDoctors = DoctorService().getDoctors();
+    _loadDoctors = DoctorService().fetchDoctors();
   }
 
   void _reload() {
-    setState(() => _loadDoctors = DoctorService().getDoctors());
+    setState(() => _loadDoctors = DoctorService().fetchDoctors());
   }
 
   @override

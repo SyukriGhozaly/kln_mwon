@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/doctor.dart';
-import '../services/schedule_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/doctor_avatar.dart';
 import '../widgets/primary_card.dart';
@@ -17,8 +16,8 @@ class DoctorDetailScreen extends StatefulWidget {
 }
 
 class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
-  late Future<void> _loadSchedules;
-  late Map<String, List<String>> _scheduleOptions = _initialScheduleOptions();
+  late final Map<String, List<String>> _scheduleOptions =
+      _initialScheduleOptions();
   late List<String> _dates = _scheduleOptions.keys.toList();
   List<String> _times = const <String>[];
   String? _date;
@@ -28,7 +27,6 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
   void initState() {
     super.initState();
     _selectFirstAvailableSlot();
-    _loadSchedules = _fetchSchedules();
   }
 
   Map<String, List<String>> _initialScheduleOptions() {
@@ -57,39 +55,6 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
     final month = now.month.toString().padLeft(2, '0');
     final day = now.day.toString().padLeft(2, '0');
     return '${now.year}-$month-$day';
-  }
-
-  Future<void> _fetchSchedules() async {
-    final schedules = await ScheduleService().getSchedules(
-      doctorId: widget.doctor.id,
-    );
-    if (schedules.isEmpty || !mounted) return;
-
-    final options = <String, Set<String>>{};
-    for (final schedule in schedules) {
-      final doctorId = _readInt(schedule, ['doctor_id', 'id_dokter']);
-      if (doctorId != null && doctorId != widget.doctor.id) continue;
-
-      final date = _readString(schedule, ['date', 'tanggal']);
-      final time = _readString(schedule, [
-        'time',
-        'jam',
-        'start_time',
-        'jam_mulai',
-      ]);
-      if (date.isNotEmpty && time.isNotEmpty) {
-        options.putIfAbsent(date, () => <String>{}).add(time);
-      }
-    }
-
-    if (options.isEmpty) return;
-    setState(() {
-      _scheduleOptions = options.map((date, times) {
-        final sortedTimes = times.toList()..sort();
-        return MapEntry(date, sortedTimes);
-      });
-      _selectFirstAvailableSlot();
-    });
   }
 
   void _selectDate(String date) {
@@ -146,32 +111,6 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
     return Icons.check_circle_rounded;
   }
 
-  void _reloadSchedules() {
-    setState(() {
-      _loadSchedules = _fetchSchedules();
-    });
-  }
-
-  Widget _scheduleLoader(AsyncSnapshot<void> snapshot, Widget child) {
-    if (snapshot.connectionState == ConnectionState.waiting && _dates.isEmpty) {
-      return const CircularProgressIndicator();
-    }
-    if (snapshot.hasError && _dates.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Gagal memuat jadwal dokter.'),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: _reloadSchedules,
-            child: const Text('Coba lagi'),
-          ),
-        ],
-      );
-    }
-    return child;
-  }
-
   List<Widget> _dateChips() {
     if (_dates.isEmpty) return [const Text('Tanggal belum tersedia.')];
     return _dates.map((date) {
@@ -220,27 +159,6 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
     );
   }
 
-  static String _readString(Map<String, dynamic> json, List<String> keys) {
-    for (final key in keys) {
-      final value = json[key];
-      if (value != null && value.toString().trim().isNotEmpty) {
-        return value.toString();
-      }
-    }
-    return '';
-  }
-
-  static int? _readInt(Map<String, dynamic> json, List<String> keys) {
-    for (final key in keys) {
-      final value = json[key];
-      if (value is int) return value;
-      if (value is num) return value.toInt();
-      final parsed = int.tryParse(value?.toString() ?? '');
-      if (parsed != null) return parsed;
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final doctor = widget.doctor;
@@ -279,7 +197,7 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                             style: const TextStyle(color: AppColors.textGrey),
                           ),
                           const SizedBox(height: 8),
-                          Text(doctor.practiceTime),
+                          Text(doctor.schedule),
                         ],
                       ),
                     ),
@@ -292,15 +210,7 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                 style: TextStyle(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 10),
-              FutureBuilder<void>(
-                future: _loadSchedules,
-                builder: (context, snapshot) {
-                  return _scheduleLoader(
-                    snapshot,
-                    Wrap(spacing: 10, runSpacing: 10, children: _dateChips()),
-                  );
-                },
-              ),
+              Wrap(spacing: 10, runSpacing: 10, children: _dateChips()),
               const SizedBox(height: 18),
               const Text(
                 'Jam Praktik',

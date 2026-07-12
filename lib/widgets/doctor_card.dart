@@ -42,7 +42,7 @@ class DoctorCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  doctor.practiceTime,
+                  doctor.schedule,
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textGrey,

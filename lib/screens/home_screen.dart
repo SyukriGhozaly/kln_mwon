@@ -23,11 +23,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadDoctors = DoctorService().getDoctors();
+    _loadDoctors = DoctorService().fetchDoctors();
   }
 
   void _reloadDoctors() {
-    setState(() => _loadDoctors = DoctorService().getDoctors());
+    setState(() => _loadDoctors = DoctorService().fetchDoctors());
   }
 
   String get _userName {
@@ -249,7 +249,7 @@ class _NearestSchedule extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                '${doctor.name} - ${doctor.practiceTime}',
+                '${doctor.name} - ${doctor.schedule}',
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),

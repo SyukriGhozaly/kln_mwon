@@ -25,16 +25,17 @@ class Doctor {
   final List<String> availableTimes;
   final int fee;
 
+  String get schedule => practiceTime;
+  String get photoUrl => imageUrl;
+
   factory Doctor.fromJson(Map<String, dynamic> json) {
-    final parsedSchedule = _scheduleText(json['schedule']);
-    final scheduleText = parsedSchedule.isNotEmpty
-        ? parsedSchedule
-        : _readString(json, [
-            'practice_time',
-            'practiceTime',
-            'jam_praktik',
-            'jadwal_praktik',
-          ]);
+    final scheduleText = _readSchedule(json, [
+      'schedule',
+      'practice_time',
+      'jadwal_praktik',
+      'practiceTime',
+      'jam_praktik',
+    ]);
     final scheduleDates = _extractScheduleDates(scheduleText);
     final rawDates = _readStringList(json, [
       'available_dates',
@@ -42,6 +43,12 @@ class Doctor {
       'tanggal_tersedia',
       'dates',
     ], fallback: scheduleDates);
+    final hasAvailableTimes = _hasListValue(json, [
+      'available_times',
+      'availableTimes',
+      'jam_tersedia',
+      'times',
+    ]);
     final rawTimes = _readStringList(json, [
       'available_times',
       'availableTimes',
@@ -53,8 +60,8 @@ class Doctor {
       id: _readInt(json, ['id', 'doctor_id', 'id_dokter']),
       name: _readString(json, ['name', 'nama', 'nama_dokter']),
       specialty: _readString(json, [
-        'specialty',
         'specialization',
+        'specialty',
         'spesialis',
         'spesialisasi',
       ], fallback: 'Dokter'),
@@ -70,20 +77,42 @@ class Doctor {
           ? 'Jadwal belum tersedia'
           : scheduleText,
       imageUrl: _readString(json, [
-        'photo',
-        'foto',
         'photo_url',
         'image_url',
+        'foto',
+        'photo',
         'imageUrl',
-      ], fallback: ''),
+      ]),
       availableDates: _normalizeDateList(
         rawDates,
         scheduleFallback: scheduleDates,
         timeFallback: scheduleText.isNotEmpty,
       ),
-      availableTimes: _normalizeTimes(rawTimes, scheduleText),
+      availableTimes: _normalizeTimes(
+        rawTimes,
+        scheduleText,
+        expandRange: !hasAvailableTimes,
+      ),
       fee: _readInt(json, ['fee', 'tarif', 'biaya', 'price'], fallback: 0),
     );
+  }
+
+  static String _readSchedule(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      final schedule = _scheduleText(value);
+      if (schedule.isNotEmpty) return schedule;
+    }
+    return '';
+  }
+
+  static bool _hasListValue(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value is List && value.isNotEmpty) return true;
+      if (value is String && value.trim().isNotEmpty) return true;
+    }
+    return false;
   }
 
   static String _readString(
@@ -160,7 +189,7 @@ class Doctor {
       final value = json[key];
       if (value is List) {
         final list = value
-            .map((item) => item.toString())
+            .map((item) => item.toString().trim())
             .where((item) => item.isNotEmpty)
             .toList();
         if (list.isNotEmpty) return list;
@@ -203,13 +232,8 @@ class Doctor {
         .where(_isIsoDate)
         .toSet()
         .toList();
-    final onlyTodayText =
-        rawDates.length == 1 &&
-        ['hari ini', 'today'].contains(rawDates.first.toLowerCase().trim());
 
-    if (normalized.isNotEmpty && (!onlyTodayText || scheduleFallback.isEmpty)) {
-      return normalized;
-    }
+    if (normalized.isNotEmpty) return normalized;
     if (scheduleFallback.isNotEmpty) return scheduleFallback;
     return timeFallback ? [_dateFromNow(0)] : const <String>[];
   }
@@ -233,15 +257,19 @@ class Doctor {
   }
 
   static List<String> _extractTimeSlots(String text) {
-    return _normalizeTimes(_extractTimes(text), text);
+    return _normalizeTimes(_extractTimes(text), text, expandRange: true);
   }
 
-  static List<String> _normalizeTimes(List<String> rawTimes, String text) {
+  static List<String> _normalizeTimes(
+    List<String> rawTimes,
+    String text, {
+    required bool expandRange,
+  }) {
     final times = rawTimes
         .map(_normalizeTime)
         .where((time) => time.isNotEmpty)
         .toList();
-    if (times.length >= 2 && _looksLikeTimeRange(text)) {
+    if (expandRange && times.length >= 2 && _looksLikeTimeRange(text)) {
       return _hourlySlots(times.first, times[1]);
     }
     return times.toSet().toList();
